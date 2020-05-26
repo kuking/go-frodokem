@@ -1,7 +1,9 @@
 package main
 
-import "encoding/hex"
-import ".."
+import (
+	"encoding/hex"
+	"github.com/kuking/go-frodokem"
+)
 
 var randoms [][]byte = make([][]byte, 0)
 
@@ -30,7 +32,7 @@ func main() {
 	go_frodokem.RandomFill = deterministicRandom
 
 	fkem := go_frodokem.Frodo640AES()
+	//fkem := go_frodokem.Frodo976AES()
 	fkem.Keygen()
-
 
 }

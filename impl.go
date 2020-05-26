@@ -3,8 +3,6 @@ package go_frodokem
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 )
 
 func cryptoFillWithRandImpl(target []byte) {
@@ -54,8 +52,6 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sk = append(sk, b...)
 	sk = append(sk, stb...)
 	sk = append(sk, pkh...)
-	fmt.Println("pk", hex.EncodeToString(pk))
-	fmt.Println("sk", hex.EncodeToString(sk))
 	return
 }
 

@@ -48,14 +48,11 @@ type PrivateKey struct {
 type PublicKey struct {
 }
 
-//self.error_distribution = (9288, 8720, 7216, 5264, 3384, 1918, 958, 422, 164, 56, 17, 4, 1)
-//self.T_chi = FrodoKEM.__cdf_zero_centred_symmetric(self.error_distribution)
-
 func shake128(msg []byte, size int) (r []byte) {
 	shake := sha3.NewCShake128([]byte{}, []byte{})
-	shake.Write(msg)
+	_, _ = shake.Write(msg)
 	r = make([]byte, size)
-	shake.Read(r)
+	_, _ = shake.Read(r)
 	return
 }
 
@@ -89,7 +86,6 @@ func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 	return
 }
 
-
 func Frodo640AES() FrodoKEM {
 
 	f := FrodoKEM{
@@ -121,6 +117,44 @@ func Frodo640AES() FrodoKEM {
 		lenSkBytes:      19888,
 		lenPkBytes:      9616,
 		lenCtBytes:      9720,
+		shake:           shake128,
+	}
+	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
+	f.gen = f.genAES128
+	return f
+}
+
+func Frodo976AES() FrodoKEM {
+
+	f := FrodoKEM{
+		errDistribution: []uint16{11278, 10277, 7774, 4882, 2545, 1101, 396, 118, 29, 6, 1},
+		D:               16,
+		q:               65536 - 1,
+		n:               976,
+		nBar:            8,
+		mBar:            8,
+		B:               3,
+		lenSeedA:        128,
+		lenSeedABytes:   128 / 8,
+		lenZ:            128,
+		lenZBytes:       128 / 8,
+		lenMu:           192,
+		lenMuBytes:      192 / 8,
+		lenSeedSE:       192,
+		lenSeedSEBytes:  192 / 8,
+		lenS:            192,
+		lenSBytes:       192 / 8,
+		lenK:            192,
+		lenKBytes:       192 / 8,
+		lenPkh:          192,
+		lenPkhBytes:     192 / 8,
+		lenSS:           192,
+		lenSSBytes:      192 / 8,
+		lenChi:          16,
+		lenChiBytes:     16 / 8,
+		lenSkBytes:      31296,
+		lenPkBytes:      15632,
+		lenCtBytes:      15744,
 		shake:           shake128,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
