@@ -113,6 +113,10 @@ func TestPQCkemKAT_19888_RSP(t *testing.T) {
 	processFile(t, Frodo640AES, "KAT/PQCkemKAT_19888.rsp.xz")
 }
 
+func TestPQCkemKAT_19888_SHAKE_RSP(t *testing.T) {
+	processFile(t, Frodo640SHAKE, "KAT/PQCkemKAT_19888_shake.rsp.xz")
+}
+
 //func TestPQCkemKAT_31296_RSP(t *testing.T) {
 //	processFile(t, Frodo640AES, "KAT/PQCkemKAT_31296.rsp.bz2")
 //}

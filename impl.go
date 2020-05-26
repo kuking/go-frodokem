@@ -21,14 +21,14 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sSeedSEz := make([]byte, k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes)
 	RandomFill(sSeedSEz) // fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
 	s := sSeedSEz[0:k.lenSBytes]
-	seedSE := sSeedSEz[k.lenSBytes : k.lenSBytes+k.lenSeedSEBytes]
+	seedSE := sSeedSEz[k.lenSBytes : k.lenSBytes+k.lenSeedSEBytes] // fmt.Println("seedSE", hex.EncodeToString(seedSE))
 	z := sSeedSEz[k.lenSBytes+k.lenSeedSEBytes : k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes]
 	seedA := k.shake(z, k.lenSeedABytes) // fmt.Println("seedA(", len(seedA), ")", strings.ToUpper(hex.EncodeToString(seedA)))
 	A := k.gen(seedA)
 	rBytesTmp := make([]byte, len(seedSE)+1)
 	rBytesTmp[0] = 0x5f
 	copy(rBytesTmp[1:], seedSE)
-	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChiBytes)
+	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChiBytes)    //	fmt.Println("rBytes", len(rBytes), hex.EncodeToString(rBytes))
 	r := unpackUint16(rBytes)                                   //fmt.Println("r(", len(r), ")", r)
 	Stransposed := k.sampleMatrix(r[0:k.n*k.nBar], k.nBar, k.n) //fmt.Println("S^T", Stransposed)
 	S := matrixTranspose(Stransposed)

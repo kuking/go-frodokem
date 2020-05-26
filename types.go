@@ -86,6 +86,24 @@ func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 	return
 }
 
+func (k *FrodoKEM) genSHAKE128(seedA []byte) (A [][]uint16) {
+	A = make([][]uint16, k.n)
+	for i := 0; i < k.n; i++ {
+		A[i] = make([]uint16, k.n)
+	}
+
+	for i := 0; i < k.n; i++ {
+		var tmp = make([]byte, 2)
+		binary.LittleEndian.PutUint16(tmp[:], uint16(i))
+		b := append(tmp[:], seedA...)
+		c := k.shake(b, 2*k.n)
+		for j := 0; j < k.n; j++ {
+			A[i][j] = binary.LittleEndian.Uint16(c[j*2:(j+1)*2]) % k.q
+		}
+	}
+	return
+}
+
 func Frodo640AES() FrodoKEM {
 
 	f := FrodoKEM{
@@ -121,6 +139,13 @@ func Frodo640AES() FrodoKEM {
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
+	return f
+}
+
+func Frodo640SHAKE() FrodoKEM {
+	f := Frodo640AES()
+	f.shake = shake128
+	f.gen = f.genSHAKE128
 	return f
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/kuking/go-frodokem"
 )
 
@@ -31,8 +32,13 @@ func main() {
 	addARandom("8BF0F459F0FB3EA8D32764C259AE631178976BAF3683D33383188A65A4C2449B")
 	go_frodokem.RandomFill = deterministicRandom
 
-	fkem := go_frodokem.Frodo640AES()
+	//fkem := go_frodokem.Frodo640AES()
+	fkem := go_frodokem.Frodo640SHAKE()
 	//fkem := go_frodokem.Frodo976AES()
-	fkem.Keygen()
+	pk, sk := fkem.Keygen()
+	fmt.Println()
+	fmt.Println("pk", hex.EncodeToString(pk))
+	fmt.Println()
+	fmt.Println("sk", hex.EncodeToString(sk))
 
 }
