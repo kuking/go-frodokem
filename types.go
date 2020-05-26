@@ -60,27 +60,22 @@ func Shake256(msg []byte, size int) (hash []byte) {
 	return
 }
 
-func AES128w16BytesOnly(key []byte, msg [16]byte) (r [16]byte) {
-	r = [16]byte{}
-	b, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
-	}
-	b.Encrypt(r[:], msg[:])
-	return r
-}
-
 func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 	A = make([][]uint16, k.n)
 	for i := 0; i < k.n; i++ {
 		A[i] = make([]uint16, k.n)
 	}
+	cipher, err := aes.NewCipher(seedA)
+	if err != nil {
+		panic(err)
+	}
 	var b = [16]byte{}
+	var c = [16]byte{}
 	for i := 0; i < k.n; i++ {
 		for j := 0; j < k.n; j += 8 {
 			binary.LittleEndian.PutUint16(b[0:2], uint16(i))
 			binary.LittleEndian.PutUint16(b[2:4], uint16(j))
-			c := AES128w16BytesOnly(seedA, b)
+			cipher.Encrypt(c[:], b[:])
 			for l := 0; l < 8; l++ {
 				A[i][j+l] = binary.LittleEndian.Uint16(c[l*2 : (l+1)*2])
 				if k.q != 0 {

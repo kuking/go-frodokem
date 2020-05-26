@@ -72,7 +72,7 @@ func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
 	return
 }
 
-func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) { //TODO: need to be sure about returns size
+func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
 	nrowsx := len(X)
 	ncolsx := len(X[0])
 	//nrowsy := len(y)
@@ -84,7 +84,7 @@ func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) { //TO
 	for i := 0; i < nrowsx; i++ {
 		for j := 0; j < ncolsy; j++ {
 			for k := 0; k < ncolsx; k++ {
-				R[i][j] += uint16(int(X[i][k]) * int(Y[k][j]))
+				R[i][j] += uint16(int32(X[i][k]) * int32(Y[k][j]))
 			}
 			if q != 0 {
 				R[i][j] %= q
