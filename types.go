@@ -48,11 +48,15 @@ type PrivateKey struct {
 type PublicKey struct {
 }
 
-func shake128(msg []byte, size int) (r []byte) {
-	shake := sha3.NewCShake128([]byte{}, []byte{})
-	_, _ = shake.Write(msg)
-	r = make([]byte, size)
-	_, _ = shake.Read(r)
+func Shake128(msg []byte, size int) (hash []byte) {
+	hash = make([]byte, size)
+	sha3.ShakeSum128(hash, msg)
+	return
+}
+
+func Shake256(msg []byte, size int) (hash []byte) {
+	hash = make([]byte, size)
+	sha3.ShakeSum256(hash, msg)
 	return
 }
 
@@ -78,7 +82,10 @@ func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 			binary.LittleEndian.PutUint16(b[2:4], uint16(j))
 			c := AES128w16BytesOnly(seedA, b)
 			for l := 0; l < 8; l++ {
-				A[i][j+l] = binary.LittleEndian.Uint16(c[l*2:(l+1)*2]) % k.q
+				A[i][j+l] = binary.LittleEndian.Uint16(c[l*2 : (l+1)*2])
+				if k.q != 0 {
+					A[i][j+l] %= k.q
+				}
 			}
 
 		}
@@ -96,17 +103,19 @@ func (k *FrodoKEM) genSHAKE128(seedA []byte) (A [][]uint16) {
 		var tmp = make([]byte, 2)
 		binary.LittleEndian.PutUint16(tmp[:], uint16(i))
 		b := append(tmp[:], seedA...)
-		c := k.shake(b, 2*k.n)
+		c := Shake128(b, 2*k.n)
 		for j := 0; j < k.n; j++ {
-			A[i][j] = binary.LittleEndian.Uint16(c[j*2:(j+1)*2]) % k.q
+			A[i][j] = binary.LittleEndian.Uint16(c[j*2 : (j+1)*2])
+			if k.q != 0 {
+				A[i][j] %= k.q
+			}
 		}
 	}
 	return
 }
 
-func Frodo640AES() FrodoKEM {
-
-	f := FrodoKEM{
+func Frodo640AES() (f FrodoKEM) {
+	f = FrodoKEM{
 		errDistribution: []uint16{9288, 8720, 7216, 5264, 3384, 1918, 958, 422, 164, 56, 17, 4, 1},
 		D:               15,
 		q:               32768,
@@ -135,26 +144,25 @@ func Frodo640AES() FrodoKEM {
 		lenSkBytes:      19888,
 		lenPkBytes:      9616,
 		lenCtBytes:      9720,
-		shake:           shake128,
+		shake:           Shake128,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
-	return f
+	return
 }
 
-func Frodo640SHAKE() FrodoKEM {
-	f := Frodo640AES()
-	f.shake = shake128
+func Frodo640SHAKE() (f FrodoKEM) {
+	f = Frodo640AES()
+	f.shake = Shake128
 	f.gen = f.genSHAKE128
-	return f
+	return
 }
 
-func Frodo976AES() FrodoKEM {
-
-	f := FrodoKEM{
+func Frodo976AES() (f FrodoKEM) {
+	f = FrodoKEM{
 		errDistribution: []uint16{11278, 10277, 7774, 4882, 2545, 1101, 396, 118, 29, 6, 1},
 		D:               16,
-		q:               65536 - 1,
+		q:               0, // means no mod in 16 bits uint
 		n:               976,
 		nBar:            8,
 		mBar:            8,
@@ -180,11 +188,60 @@ func Frodo976AES() FrodoKEM {
 		lenSkBytes:      31296,
 		lenPkBytes:      15632,
 		lenCtBytes:      15744,
-		shake:           shake128,
+		shake:           Shake256,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
-	return f
+	return
+}
+
+func Frodo976SHAKE() (f FrodoKEM) {
+	f = Frodo976AES()
+	f.gen = f.genSHAKE128
+	return
+}
+
+func Frodo1344AES() (f FrodoKEM) {
+	f = FrodoKEM{
+		errDistribution: []uint16{18286, 14320, 6876, 2023, 364, 40, 2},
+		D:               16,
+		q:               0,
+		n:               1344,
+		nBar:            8,
+		mBar:            8,
+		B:               4,
+		lenSeedA:        128,
+		lenSeedABytes:   128 / 8,
+		lenZ:            128,
+		lenZBytes:       128 / 8,
+		lenMu:           256,
+		lenMuBytes:      256 / 8,
+		lenSeedSE:       256,
+		lenSeedSEBytes:  256 / 8,
+		lenS:            256,
+		lenSBytes:       256 / 8,
+		lenK:            256,
+		lenKBytes:       256 / 8,
+		lenPkh:          256,
+		lenPkhBytes:     256 / 8,
+		lenSS:           256,
+		lenSSBytes:      256 / 8,
+		lenChi:          16,
+		lenChiBytes:     16 / 8,
+		lenSkBytes:      43088,
+		lenPkBytes:      21520,
+		lenCtBytes:      21632,
+		shake:           Shake256,
+	}
+	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
+	f.gen = f.genAES128
+	return
+}
+
+func Frodo1344SHAKE() (f FrodoKEM) {
+	f = Frodo1344AES()
+	f.gen = f.genSHAKE128
+	return
 }
 
 func sumUint16s(arr []uint16) (r uint16) {

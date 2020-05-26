@@ -19,16 +19,16 @@ var RandomFill = cryptoFillWithRandImpl
 
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sSeedSEz := make([]byte, k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes)
-	RandomFill(sSeedSEz) // fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
+	RandomFill(sSeedSEz) //	fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
 	s := sSeedSEz[0:k.lenSBytes]
 	seedSE := sSeedSEz[k.lenSBytes : k.lenSBytes+k.lenSeedSEBytes] // fmt.Println("seedSE", hex.EncodeToString(seedSE))
 	z := sSeedSEz[k.lenSBytes+k.lenSeedSEBytes : k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes]
-	seedA := k.shake(z, k.lenSeedABytes) // fmt.Println("seedA(", len(seedA), ")", strings.ToUpper(hex.EncodeToString(seedA)))
+	seedA := k.shake(z, k.lenSeedABytes) //	fmt.Println("seedA(", len(seedA), ")", strings.ToUpper(hex.EncodeToString(seedA)))
 	A := k.gen(seedA)
 	rBytesTmp := make([]byte, len(seedSE)+1)
 	rBytesTmp[0] = 0x5f
 	copy(rBytesTmp[1:], seedSE)
-	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChiBytes)    //	fmt.Println("rBytes", len(rBytes), hex.EncodeToString(rBytes))
+	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChiBytes)    //fmt.Println("rBytes", len(rBytes), hex.EncodeToString(rBytes))
 	r := unpackUint16(rBytes)                                   //fmt.Println("r(", len(r), ")", r)
 	Stransposed := k.sampleMatrix(r[0:k.n*k.nBar], k.nBar, k.n) //fmt.Println("S^T", Stransposed)
 	S := matrixTranspose(Stransposed)
@@ -36,8 +36,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	B := matrixAdd(matrixMulWithMod(A, S, k.q), E)
 	b := k.pack(B) // fmt.Println("b", hex.EncodeToString(b))
 	pk = append(seedA, b...)
-	pkh := k.shake(pk, k.lenPkhBytes) // fmt.Println("pkh", hex.EncodeToString(pkh))
-
+	pkh := k.shake(pk, k.lenPkhBytes) // fmt.Println("pkh", strings.ToUpper(hex.EncodeToString(pkh)))
 	stb := make([]uint8, len(Stransposed)*len(Stransposed[0])*2)
 	stbI := 0
 	for i := 0; i < len(Stransposed); i++ {
@@ -87,7 +86,9 @@ func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) { //TO
 			for k := 0; k < ncolsx; k++ {
 				R[i][j] += uint16(int(X[i][k]) * int(Y[k][j]))
 			}
-			R[i][j] %= q
+			if q != 0 {
+				R[i][j] %= q
+			}
 		}
 	}
 	return
@@ -142,14 +143,6 @@ func (k *FrodoKEM) sampleMatrix(r []uint16, n1 int, n2 int) (E [][]int16) {
 	return E
 }
 
-func minUint8(a, b uint8) uint8 {
-	if a > b {
-		return b
-	} else {
-		return a
-	}
-}
-
 // Algorithm 3: Frodo.Pack
 func (k *FrodoKEM) pack(C [][]uint16) (r []byte) {
 	rows := len(C)
@@ -164,7 +157,7 @@ func (k *FrodoKEM) pack(C [][]uint16) (r []byte) {
 			for b := 0; b < k.D; b++ {
 				bit := bitn(val, k.D-b-1)
 				packed <<= 1
-				packed += bit
+				packed |= bit
 				bits++
 				if bits == 8 {
 					r[ri] = packed

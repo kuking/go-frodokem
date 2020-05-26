@@ -66,6 +66,7 @@ func processFile(t *testing.T, kemBuilder func() FrodoKEM, filename string) {
 	}
 
 	scanner := bufio.NewScanner(reader)
+	scanner.Buffer(make([]byte, 90*1024), 90*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -117,9 +118,21 @@ func TestPQCkemKAT_19888_SHAKE_RSP(t *testing.T) {
 	processFile(t, Frodo640SHAKE, "KAT/PQCkemKAT_19888_shake.rsp.xz")
 }
 
-//func TestPQCkemKAT_31296_RSP(t *testing.T) {
-//	processFile(t, Frodo640AES, "KAT/PQCkemKAT_31296.rsp.bz2")
-//}
+func TestPQCkemKAT_31296_RSP(t *testing.T) {
+	processFile(t, Frodo976AES, "KAT/PQCkemKAT_31296.rsp.xz")
+}
+
+func TestPQCkemKAT_31296_SHAKE_RSP(t *testing.T) {
+	processFile(t, Frodo976SHAKE, "KAT/PQCkemKAT_31296_shake.rsp.xz")
+}
+
+func TestPQCkemKAT43088_RSP(t *testing.T) {
+	processFile(t, Frodo1344AES, "KAT/PQCkemKAT_43088.rsp.xz")
+}
+
+func TestPQCkemKAT43088_SHAKE_RSP(t *testing.T) {
+	processFile(t, Frodo1344SHAKE, "KAT/PQCkemKAT_43088_shake.rsp.xz")
+}
 
 func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][]byte) {
 	result = make(map[string][]byte)
