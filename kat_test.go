@@ -113,26 +113,32 @@ func processFile(t *testing.T, kemBuilder func() FrodoKEM, filename string) {
 }
 
 func TestPQCkemKAT_19888_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo640AES, "KAT/PQCkemKAT_19888.rsp.xz")
 }
 
 func TestPQCkemKAT_19888_SHAKE_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo640SHAKE, "KAT/PQCkemKAT_19888_shake.rsp.xz")
 }
 
 func TestPQCkemKAT_31296_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo976AES, "KAT/PQCkemKAT_31296.rsp.xz")
 }
 
 func TestPQCkemKAT_31296_SHAKE_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo976SHAKE, "KAT/PQCkemKAT_31296_shake.rsp.xz")
 }
 
 func TestPQCkemKAT43088_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo1344AES, "KAT/PQCkemKAT_43088.rsp.xz")
 }
 
 func TestPQCkemKAT43088_SHAKE_RSP(t *testing.T) {
+	t.Parallel()
 	processFile(t, Frodo1344SHAKE, "KAT/PQCkemKAT_43088_shake.rsp.xz")
 }
 
