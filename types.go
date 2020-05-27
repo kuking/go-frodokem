@@ -2,6 +2,7 @@ package go_frodokem
 
 import (
 	"crypto/aes"
+	"crypto/rand"
 	"encoding/binary"
 	"golang.org/x/crypto/sha3"
 )
@@ -34,30 +35,12 @@ type FrodoKEM struct {
 	lenSSBytes      int
 	lenChi          int
 	lenChiBytes     int
-
-	lenSkBytes int
-	lenPkBytes int
-	lenCtBytes int
-	shake      func(msg []byte, digestLength int) []byte
-	gen        func([]byte) [][]uint16
-}
-
-type PrivateKey struct {
-}
-
-type PublicKey struct {
-}
-
-func Shake128(msg []byte, size int) (hash []byte) {
-	hash = make([]byte, size)
-	sha3.ShakeSum128(hash, msg)
-	return
-}
-
-func Shake256(msg []byte, size int) (hash []byte) {
-	hash = make([]byte, size)
-	sha3.ShakeSum256(hash, msg)
-	return
+	lenSkBytes      int
+	lenPkBytes      int
+	lenCtBytes      int
+	shake           func(msg []byte, digestLength int) []byte
+	gen             func([]byte) [][]uint16
+	rng             func([]byte)
 }
 
 func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
@@ -93,12 +76,11 @@ func (k *FrodoKEM) genSHAKE128(seedA []byte) (A [][]uint16) {
 	for i := 0; i < k.n; i++ {
 		A[i] = make([]uint16, k.n)
 	}
-
+	var tmp = make([]byte, 2+len(seedA))
+	copy(tmp[2:], seedA)
 	for i := 0; i < k.n; i++ {
-		var tmp = make([]byte, 2)
-		binary.LittleEndian.PutUint16(tmp[:], uint16(i))
-		b := append(tmp[:], seedA...)
-		c := Shake128(b, 2*k.n)
+		binary.LittleEndian.PutUint16(tmp[0:], uint16(i))
+		c := Shake128(tmp, 2*k.n)
 		for j := 0; j < k.n; j++ {
 			A[i][j] = binary.LittleEndian.Uint16(c[j*2 : (j+1)*2])
 			if k.q != 0 {
@@ -140,6 +122,7 @@ func Frodo640AES() (f FrodoKEM) {
 		lenPkBytes:      9616,
 		lenCtBytes:      9720,
 		shake:           Shake128,
+		rng:             cryptoRand,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
@@ -184,6 +167,7 @@ func Frodo976AES() (f FrodoKEM) {
 		lenPkBytes:      15632,
 		lenCtBytes:      15744,
 		shake:           Shake256,
+		rng:             cryptoRand,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
@@ -227,6 +211,7 @@ func Frodo1344AES() (f FrodoKEM) {
 		lenPkBytes:      21520,
 		lenCtBytes:      21632,
 		shake:           Shake256,
+		rng:             cryptoRand,
 	}
 	f.tChi = cdfZeroCentredSymmetric(f.errDistribution)
 	f.gen = f.genAES128
@@ -253,5 +238,27 @@ func cdfZeroCentredSymmetric(chi []uint16) (tChi []uint16) {
 	for z := 1; z < len(chi); z++ {
 		tChi[z] = tChi[0] + sumUint16s(chi[1:z+1])
 	}
+	return
+}
+
+func cryptoRand(target []byte) {
+	n, err := rand.Read(target)
+	if err != nil {
+		panic(err)
+	}
+	if len(target) != n {
+		panic("could not generate enough randomness")
+	}
+}
+
+func Shake128(msg []byte, size int) (hash []byte) {
+	hash = make([]byte, size)
+	sha3.ShakeSum128(hash, msg)
+	return
+}
+
+func Shake256(msg []byte, size int) (hash []byte) {
+	hash = make([]byte, size)
+	sha3.ShakeSum256(hash, msg)
 	return
 }

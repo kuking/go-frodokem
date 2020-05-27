@@ -1,25 +1,12 @@
 package go_frodokem
 
 import (
-	"crypto/rand"
 	"encoding/binary"
 )
 
-func cryptoFillWithRandImpl(target []byte) {
-	n, err := rand.Read(target)
-	if err != nil {
-		panic(err)
-	}
-	if len(target) != n {
-		panic("could not generate enough randomness")
-	}
-}
-
-var RandomFill = cryptoFillWithRandImpl
-
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sSeedSEz := make([]byte, k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes)
-	RandomFill(sSeedSEz) //	fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
+	k.rng(sSeedSEz) //	fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
 	s := sSeedSEz[0:k.lenSBytes]
 	seedSE := sSeedSEz[k.lenSBytes : k.lenSBytes+k.lenSeedSEBytes] // fmt.Println("seedSE", hex.EncodeToString(seedSE))
 	z := sSeedSEz[k.lenSBytes+k.lenSeedSEBytes : k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes]

@@ -35,8 +35,9 @@ func (td *TestData) clear() {
 }
 
 func (td *TestData) doTest(t *testing.T) {
-	RandomFill = seeder
-	initSeed(td.randomness)
+	t.Parallel()
+	nrng := NewNonRandomNG(td.randomness)
+	td.kem.rng = nrng.rng
 	pk, sk := td.kem.Keygen()
 	if !bytes.Equal(td.expPk, pk) {
 		t.Errorf("Expected PK not equal for file %v count %v\n[%v]\n[%v]\n",
@@ -101,7 +102,8 @@ func processFile(t *testing.T, kemBuilder func() FrodoKEM, filename string) {
 			t.Fatal(err)
 		}
 		if td.expSs != nil {
-			t.Run(fmt.Sprintf("%v(%v)", filename, td.count), td.doTest)
+			td4Parallel := td
+			t.Run(fmt.Sprintf("%v(%v)", filename, td4Parallel.count), td4Parallel.doTest)
 		}
 	}
 
@@ -168,13 +170,16 @@ func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][]byte
 
 // -------------------------------------------------------------------------------------------------------------------
 
-var seedData []byte
-
-func initSeed(seed []byte) {
-	seedData = seed
+type NonRandomNG struct {
+	data []byte
 }
 
-func seeder(target []byte) {
-	copy(target, seedData)
-	seedData = seedData[len(target):]
+func NewNonRandomNG(seedData []byte) (dr NonRandomNG) {
+	dr = NonRandomNG{data: seedData}
+	return
+}
+
+func (dr *NonRandomNG) rng(target []byte) {
+	copy(target, dr.data)
+	dr.data = dr.data[len(target):]
 }
