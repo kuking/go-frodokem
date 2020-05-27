@@ -164,3 +164,7 @@ func (k *FrodoKEM) pack(C [][]uint16) (r []byte) {
 func bitn(val uint16, i int) uint8 {
 	return uint8((val >> i) & 1)
 }
+
+func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
+	k.rng = newRng
+}

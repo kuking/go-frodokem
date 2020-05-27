@@ -36,8 +36,8 @@ func (td *TestData) clear() {
 
 func (td *TestData) doTest(t *testing.T) {
 	t.Parallel()
-	nrng := NewNonRandomNG(td.randomness)
-	td.kem.rng = nrng.rng
+	nonRng := NewNonRandomNG(td.randomness)
+	td.kem.OverrideRng(nonRng.rng)
 	pk, sk := td.kem.Keygen()
 	if !bytes.Equal(td.expPk, pk) {
 		t.Errorf("Expected PK not equal for file %v count %v\n[%v]\n[%v]\n",
