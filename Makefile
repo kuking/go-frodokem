@@ -1,4 +1,4 @@
-all: clean build test coverage
+all: clean build test bench coverage
 
 clean:
 	go clean -testcache -cache
