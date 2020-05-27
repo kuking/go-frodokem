@@ -2,20 +2,22 @@ package go_frodokem
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 )
 
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
-	sSeedSEz := make([]byte, k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes)
+	sSeedSEz := make([]byte, k.lenS/8+k.lenSeedSE/8+k.lenZ/8)
 	k.rng(sSeedSEz) //	fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
-	s := sSeedSEz[0:k.lenSBytes]
-	seedSE := sSeedSEz[k.lenSBytes : k.lenSBytes+k.lenSeedSEBytes] // fmt.Println("seedSE", hex.EncodeToString(seedSE))
-	z := sSeedSEz[k.lenSBytes+k.lenSeedSEBytes : k.lenSBytes+k.lenSeedSEBytes+k.lenZBytes]
-	seedA := k.shake(z, k.lenSeedABytes) //	fmt.Println("seedA(", len(seedA), ")", strings.ToUpper(hex.EncodeToString(seedA)))
+	s := sSeedSEz[0 : k.lenS/8]
+	seedSE := sSeedSEz[k.lenS/8 : k.lenS/8+k.lenSeedSE/8] // fmt.Println("seedSE", hex.EncodeToString(seedSE))
+	z := sSeedSEz[k.lenS/8+k.lenSeedSE/8 : k.lenS/8+k.lenSeedSE/8+k.lenZ/8]
+	seedA := k.shake(z, k.lenSeedA/8) //	fmt.Println("seedA(", len(seedA), ")", strings.ToUpper(hex.EncodeToString(seedA)))
 	A := k.gen(seedA)
 	rBytesTmp := make([]byte, len(seedSE)+1)
 	rBytesTmp[0] = 0x5f
 	copy(rBytesTmp[1:], seedSE)
-	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChiBytes)    //fmt.Println("rBytes", len(rBytes), hex.EncodeToString(rBytes))
+	rBytes := k.shake(rBytesTmp, 2*k.n*k.nBar*k.lenChi/8)       //fmt.Println("rBytes", len(rBytes), hex.EncodeToString(rBytes))
 	r := unpackUint16(rBytes)                                   //fmt.Println("r(", len(r), ")", r)
 	Stransposed := k.sampleMatrix(r[0:k.n*k.nBar], k.nBar, k.n) //fmt.Println("S^T", Stransposed)
 	S := matrixTranspose(Stransposed)
@@ -23,7 +25,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	B := matrixAdd(matrixMulWithMod(A, S, k.q), E)
 	b := k.pack(B) // fmt.Println("b", hex.EncodeToString(b))
 	pk = append(seedA, b...)
-	pkh := k.shake(pk, k.lenPkhBytes) // fmt.Println("pkh", strings.ToUpper(hex.EncodeToString(pkh)))
+	pkh := k.shake(pk, k.lenPkh/8) // fmt.Println("pkh", strings.ToUpper(hex.EncodeToString(pkh)))
 	stb := make([]uint8, len(Stransposed)*len(Stransposed[0])*2)
 	stbI := 0
 	for i := 0; i < len(Stransposed); i++ {

@@ -18,23 +18,14 @@ type FrodoKEM struct {
 	mBar            int
 	B               int
 	lenSeedA        int
-	lenSeedABytes   int
 	lenZ            int
-	lenZBytes       int
 	lenMu           int
-	lenMuBytes      int
 	lenSeedSE       int
-	lenSeedSEBytes  int
 	lenS            int
-	lenSBytes       int
 	lenK            int
-	lenKBytes       int
 	lenPkh          int
-	lenPkhBytes     int
 	lenSS           int
-	lenSSBytes      int
 	lenChi          int
-	lenChiBytes     int
 	lenSkBytes      int
 	lenPkBytes      int
 	lenCtBytes      int
@@ -101,23 +92,14 @@ func Frodo640AES() (f FrodoKEM) {
 		mBar:            8,
 		B:               2,
 		lenSeedA:        128,
-		lenSeedABytes:   128 / 8,
 		lenZ:            128,
-		lenZBytes:       128 / 8,
 		lenMu:           128,
-		lenMuBytes:      128 / 8,
 		lenSeedSE:       128,
-		lenSeedSEBytes:  128 / 8,
 		lenS:            128,
-		lenSBytes:       128 / 8,
 		lenK:            128,
-		lenKBytes:       128 / 8,
 		lenPkh:          128,
-		lenPkhBytes:     128 / 8,
 		lenSS:           128,
-		lenSSBytes:      128 / 8,
 		lenChi:          16,
-		lenChiBytes:     16 / 8,
 		lenSkBytes:      19888,
 		lenPkBytes:      9616,
 		lenCtBytes:      9720,
@@ -146,23 +128,14 @@ func Frodo976AES() (f FrodoKEM) {
 		mBar:            8,
 		B:               3,
 		lenSeedA:        128,
-		lenSeedABytes:   128 / 8,
 		lenZ:            128,
-		lenZBytes:       128 / 8,
 		lenMu:           192,
-		lenMuBytes:      192 / 8,
 		lenSeedSE:       192,
-		lenSeedSEBytes:  192 / 8,
 		lenS:            192,
-		lenSBytes:       192 / 8,
 		lenK:            192,
-		lenKBytes:       192 / 8,
 		lenPkh:          192,
-		lenPkhBytes:     192 / 8,
 		lenSS:           192,
-		lenSSBytes:      192 / 8,
 		lenChi:          16,
-		lenChiBytes:     16 / 8,
 		lenSkBytes:      31296,
 		lenPkBytes:      15632,
 		lenCtBytes:      15744,
@@ -190,23 +163,14 @@ func Frodo1344AES() (f FrodoKEM) {
 		mBar:            8,
 		B:               4,
 		lenSeedA:        128,
-		lenSeedABytes:   128 / 8,
 		lenZ:            128,
-		lenZBytes:       128 / 8,
 		lenMu:           256,
-		lenMuBytes:      256 / 8,
 		lenSeedSE:       256,
-		lenSeedSEBytes:  256 / 8,
 		lenS:            256,
-		lenSBytes:       256 / 8,
 		lenK:            256,
-		lenKBytes:       256 / 8,
 		lenPkh:          256,
-		lenPkhBytes:     256 / 8,
 		lenSS:           256,
-		lenSSBytes:      256 / 8,
 		lenChi:          16,
-		lenChiBytes:     16 / 8,
 		lenSkBytes:      43088,
 		lenPkBytes:      21520,
 		lenCtBytes:      21632,
