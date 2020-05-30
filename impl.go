@@ -2,6 +2,7 @@ package go_frodokem
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 )
@@ -43,6 +44,49 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	return
 }
 
+func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error) {
+	if len(pk) != k.lenSeedA/8+k.D*k.n*k.nBar/8 {
+		err = errors.New("incorrect public key length")
+	}
+	seedA := pk[0 : k.lenSeedA/8]
+	b := pk[k.lenSeedA/8:]
+	mu := make([]byte, k.lenMu/8)
+	k.rng(mu)
+	//fmt.Println("seedA", hex.EncodeToString(seedA))
+	//fmt.Println("b", hex.EncodeToString(b))
+	//fmt.Println("mu", hex.EncodeToString(mu))
+	pkh := k.shake(pk, k.lenPkh/8)
+	fmt.Println("pkh", hex.EncodeToString(pkh))
+	seedSE_k := k.shake(append(pkh, mu...), k.lenSeedSE/8+k.lenK/8)
+	seedSE := seedSE_k[0 : k.lenSeedSE/8]
+	_k := seedSE_k[k.lenSeedSE/8 : k.lenSeedSE/8+k.lenK/8]
+	rBytesTmp := make([]byte, len(seedSE)+1)
+	rBytesTmp[0] = 0x96
+	copy(rBytesTmp[1:], seedSE)
+	rBytes := k.shake(rBytesTmp, (2*k.mBar*k.n*k.mBar*k.mBar)*k.lenChi/8)
+	r := unpackUint16(rBytes)
+	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)            // fmt.Println("S'", Sprime)
+	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n) // fmt.Println("E'", Eprime)
+	A := k.gen(seedA)
+	Bprime := matrixAdd(matrixMulWithMod2(Sprime, A, k.q), Eprime) // fmt.Println("B'", Bprime)
+	c1 := k.pack(Bprime)
+	fmt.Println("c1", hex.EncodeToString(c1))
+	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar)
+	fmt.Println("E''", Eprimeprime)
+	B := k.unpack(b, k.n, k.nBar)
+
+	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
+	//C := matrixAdd(V, unpackUint16(mu))
+
+	fmt.Println(len(_k), len(c1), len(Eprimeprime), len(B), len(V))
+
+	return
+}
+
+func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err error) {
+	return
+}
+
 func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
 	nrowsx := len(X)
 	ncolsx := len(X[0])
@@ -62,6 +106,28 @@ func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
 }
 
 func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	//nrowsy := len(y)
+	ncolsy := len(Y[0])
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < len(R); i++ {
+		R[i] = make([]uint16, ncolsy)
+	}
+	for i := 0; i < nrowsx; i++ {
+		for j := 0; j < ncolsy; j++ {
+			for k := 0; k < ncolsx; k++ {
+				R[i][j] += uint16(int32(X[i][k]) * int32(Y[k][j]))
+			}
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixMulWithMod2(X [][]int16, Y [][]uint16, q uint16) (R [][]uint16) {
 	nrowsx := len(X)
 	ncolsx := len(X[0])
 	//nrowsy := len(y)
@@ -161,6 +227,11 @@ func (k *FrodoKEM) pack(C [][]uint16) (r []byte) {
 		r[ri] = packed
 	}
 	return r
+}
+
+func (k *FrodoKEM) unpack(b []uint8, n1 int, n2 int) (C [][]uint16) {
+	// TODO
+	return
 }
 
 func bitn(val uint16, i int) uint8 {
