@@ -37,10 +37,18 @@ func main() {
 	//fkem := go_frodokem.Frodo976AES()
 	fkem.OverrideRng(deterministicRandom)
 	pk, sk := fkem.Keygen()
+	fmt.Println()
+	fmt.Println("pk", hex.EncodeToString(pk))
+	fmt.Println()
+	fmt.Println("sk", hex.EncodeToString(sk))
+
 	ct, ssEnc, err := fkem.Encapsulate(pk)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("ct", hex.EncodeToString(ct))
+	fmt.Println("ssEnc", hex.EncodeToString(ssEnc))
+
 	ssDec, err := fkem.Dencapsulate(sk, ct)
 	if err != nil {
 		panic(err)
@@ -50,8 +58,4 @@ func main() {
 		panic("encapsulate -> decapsulate didn't work")
 	}
 
-	fmt.Println()
-	fmt.Println("pk", hex.EncodeToString(pk))
-	fmt.Println()
-	fmt.Println("sk", hex.EncodeToString(sk))
 }

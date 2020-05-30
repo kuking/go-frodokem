@@ -3,7 +3,6 @@ package go_frodokem
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
@@ -71,12 +70,16 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar) // fmt.Println("E''", Eprimeprime)
 	B := k.unpack(b, k.n, k.nBar)
 	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
-	muEncoded := k.encode(mu)
-
-	//C := matrixAdd(V, unpackUint16(mu))
-
-	fmt.Println(len(_k), len(c1), len(Eprimeprime), len(B), len(V), len(muEncoded))
-
+	C := uMatrixAdd(V, k.encode(mu), k.q)
+	c2 := k.pack(C)
+	ct = append(c1, c2...)
+	ssEnc = k.shake(append(ct, _k...), k.lenSS/8)
+	if len(ct) != k.lenCtBytes {
+		err = errors.New("ct length is not correct")
+	}
+	if len(ssEnc) != k.lenSS/8 {
+		err = errors.New("ssEnc length is not correct")
+	}
 	return
 }
 
@@ -97,6 +100,27 @@ func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
 			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+		}
+	}
+	return
+}
+
+func uMatrixAdd(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	nrowsy := len(Y)
+	ncolsy := len(Y[0])
+	if nrowsx != nrowsy || ncolsx != ncolsy {
+		panic("can't add these matrices")
+	}
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < nrowsx; i++ {
+		R[i] = make([]uint16, ncolsx)
+		for j := 0; j < ncolsx; j++ {
+			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
 		}
 	}
 	return
@@ -269,7 +293,6 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 		for j := 0; j < k.nBar; j++ {
 			for l := 0; l < k.B; l++ {
 				bit := uint8BitN(b[bIdx], BBit)
-				fmt.Print(bit)
 				if BBit++; BBit > 7 {
 					BBit = 0
 					bIdx++
