@@ -16,7 +16,7 @@ type TestData struct {
 	kem        *FrodoKEM
 	filename   *string
 	count      int64
-	randomness []byte
+	randomness [][]byte
 	expPk      []byte
 	expSk      []byte
 	expCt      []byte
@@ -46,6 +46,18 @@ func (td *TestData) doTest(t *testing.T) {
 	if !bytes.Equal(td.expSk, sk) {
 		t.Errorf("Expected SK not equal for file %v count %v\n[%v]\n[%v]\n",
 			td.filename, td.count, hex.EncodeToString(td.expSk), hex.EncodeToString(sk))
+	}
+	ct, ssEnc, err := td.kem.Encapsulate(pk)
+	if err != nil {
+		t.Error(err)
+	}
+	if !bytes.Equal(td.expCt, ct) {
+		t.Errorf("Expected CT not equal for file %v count %v\n[%v]\n[%v]\n",
+			td.filename, td.count, hex.EncodeToString(td.expCt), hex.EncodeToString(ct))
+	}
+	if !bytes.Equal(td.expSs, ssEnc) {
+		t.Errorf("Expected SS (during encapsulate) not equal for file %v count %v\n[%v]\n[%v]\n",
+			td.filename, td.count, hex.EncodeToString(td.expSs), hex.EncodeToString(ssEnc))
 	}
 }
 
@@ -142,8 +154,8 @@ func TestPQCkemKAT43088_SHAKE_RSP(t *testing.T) {
 	processFile(t, Frodo1344SHAKE, "KAT/PQCkemKAT_43088_shake.rsp.xz")
 }
 
-func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][]byte) {
-	result = make(map[string][]byte)
+func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][][]byte) {
+	result = make(map[string][][]byte)
 	file, err := os.Open("KAT/PRE_GEN_RND_FROM_SEEDS.txt.xz")
 	if err != nil {
 		t.Fatal(err)
@@ -155,17 +167,21 @@ func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][]byte
 		t.Fatal(err)
 	}
 
-	re := regexp.MustCompile(`^(\w*) = (\w*)$`)
+	re := regexp.MustCompile(`^(\w*) = (\w*),(\w*),(\w*),(\w*),(\w*),(\w*)$`)
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
 		line := scanner.Text()
 		match := re.FindStringSubmatch(line)
-		if len(match) == 3 {
+		if len(match) == 8 {
 			seed := match[1]
-			randomness, err := hex.DecodeString(match[2])
-			if err != nil {
-				t.Error(err)
+			randomness := make([][]byte, 6)
+			for i := 0; i < 6; i++ {
+				randomness[i], _ = hex.DecodeString(match[2+i])
+				if err != nil {
+					t.Error(err)
+				}
 			}
+
 			result[seed] = randomness
 		} else {
 			t.Error("pre generated randomness from seeds, file can't be parsed.")
@@ -177,15 +193,20 @@ func loadPreGeneratedRandomnessFromSeeds(t *testing.T) (result map[string][]byte
 // -------------------------------------------------------------------------------------------------------------------
 
 type NonRandomNG struct {
-	data []byte
+	data [][]byte
 }
 
-func NewNonRandomNG(seedData []byte) (dr NonRandomNG) {
+func NewNonRandomNG(seedData [][]byte) (dr NonRandomNG) {
 	dr = NonRandomNG{data: seedData}
 	return
 }
 
 func (dr *NonRandomNG) rng(target []byte) {
-	copy(target, dr.data)
-	dr.data = dr.data[len(target):]
+	for i := 0; i < len(dr.data); i++ {
+		if len(dr.data[i]) == len(target) {
+			copy(target, dr.data[i])
+			return
+		}
+	}
+	panic("could not find a randomness of the size requested")
 }

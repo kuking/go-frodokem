@@ -32,9 +32,9 @@ func main() {
 	addARandom("7C9935A0B07694AA0C6D10E4DB6B1ADD2FD81A25CCB148032DCD739936737F2DB505D7CFAD1B497499323C8686325E4792F267AAFA3F87CA60D01CB54F29202A3E784CCB7EBCDCFD45542B7F6AF77874")
 	addARandom("8BF0F459F0FB3EA8D32764C259AE631178976BAF3683D33383188A65A4C2449B")
 
-	fkem := go_frodokem.Frodo640AES()
+	//fkem := go_frodokem.Frodo640AES()
 	//fkem := go_frodokem.Frodo640SHAKE()
-	//fkem := go_frodokem.Frodo976AES()
+	fkem := go_frodokem.Frodo976AES()
 	fkem.OverrideRng(deterministicRandom)
 	pk, sk := fkem.Keygen()
 	fmt.Println()

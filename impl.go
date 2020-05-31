@@ -71,7 +71,7 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	B := k.unpack(b, k.n, k.nBar)
 	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
 	C := uMatrixAdd(V, k.encode(mu), k.q)
-	c2 := k.pack(C)
+	c2 := k.pack(C) // 	fmt.Println("c2", hex.EncodeToString(c2))
 	ct = append(c1, c2...)
 	ssEnc = k.shake(append(ct, _k...), k.lenSS/8)
 	if len(ct) != k.lenCtBytes {
@@ -283,7 +283,10 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 	for i := 0; i < k.mBar; i++ {
 		K[i] = make([]uint16, k.nBar)
 	}
-	multiplier := k.q
+	multiplier := int(k.q)
+	if multiplier == 0 {
+		multiplier = 65536
+	}
 	if k.B > 0 {
 		multiplier /= 2 << (k.B - 1)
 	}
@@ -301,7 +304,7 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 					K[i][j] |= 1 << l
 				}
 			}
-			K[i][j] *= multiplier
+			K[i][j] *= uint16(multiplier)
 		}
 	}
 	return
