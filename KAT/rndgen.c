@@ -67,16 +67,27 @@ void printHex(FILE *fp, unsigned char *buf, int size) {
     }
 }
 
+void twoRandoms(FILE *fp, unsigned char seed[48], int s1, int s2) {
+    unsigned char rndBytes[256];
+    randombytes_init(seed, NULL, 256);
+    randombytes(rndBytes, s1);
+    printHex(fp, rndBytes, s1);
+    printf(",");
+    randombytes(rndBytes, s2);
+    printHex(fp, rndBytes, s2);
+}
+
 int main() {
     int size;
     unsigned char seed[48];
-    unsigned char rndBytes[256];
     while ((size = readHexLine(stdin, seed, sizeof(seed))) > 0) {
-        randombytes_init(seed, NULL, 256);
-        randombytes(rndBytes, sizeof(rndBytes));
-        printHex(stdout, seed, size);
+        printHex(stdout, seed, sizeof(seed));
         printf(" = ");
-        printHex(stdout, rndBytes, sizeof(rndBytes));
+        twoRandoms(stdout, seed, 96 / 2, 32 / 2);
+        printf(",");
+        twoRandoms(stdout, seed, 128 / 2, 48 / 2);
+        printf(",");
+        twoRandoms(stdout, seed, 160 / 2, 64 / 2);
         printf("\n");
     }
 }
