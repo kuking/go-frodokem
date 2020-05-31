@@ -4,44 +4,34 @@ import (
 	"testing"
 )
 
-func Benchmark_FrodoKEM_640_AES_Keygen(b *testing.B) {
-	k := Frodo640AES()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
+func suites() map[string]FrodoKEM {
+	return map[string]FrodoKEM{
+		" 640 AES  ": Frodo640AES(),
+		" 640 SHAKE": Frodo640SHAKE(),
+		" 976 AES  ": Frodo976AES(),
+		" 976 SHAKE": Frodo976SHAKE(),
+		"1344 AES  ": Frodo1344AES(),
+		"1344 SHAKE": Frodo1344SHAKE(),
 	}
 }
 
-func Benchmark_FrodoKEM_640_SHAKE_Keygen(b *testing.B) {
-	k := Frodo640SHAKE()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
+func Benchmark_FrodoKEM_Keygen(b *testing.B) {
+	for name, kem := range suites() {
+		b.Run(name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				kem.Keygen()
+			}
+		})
 	}
 }
 
-func Benchmark_FrodoKEM_976_AES_Keygen(b *testing.B) {
-	k := Frodo976AES()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
-	}
-}
-
-func Benchmark_FrodoKEM_976_SHAKE_Keygen(b *testing.B) {
-	k := Frodo976SHAKE()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
-	}
-}
-
-func Benchmark_FrodoKEM_1344_AES_Keygen(b *testing.B) {
-	k := Frodo1344AES()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
-	}
-}
-
-func Benchmark_FrodoKEM_1344_SHAKE_Keygen(b *testing.B) {
-	k := Frodo1344SHAKE()
-	for i := 0; i < b.N; i++ {
-		k.Keygen()
+func Benchmark_FrodoKEM_Encapsulate(b *testing.B) {
+	for name, kem := range suites() {
+		b.Run(name, func(b *testing.B) {
+			pk, _ := kem.Keygen()
+			for i := 0; i < b.N; i++ {
+				kem.Encapsulate(pk)
+			}
+		})
 	}
 }
