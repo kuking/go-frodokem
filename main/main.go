@@ -25,6 +25,9 @@ func addARandom(hexs string) {
 }
 
 func main() {
+	//seed := "061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1"
+	expSS, _ := hex.DecodeString("594DE84473B3408E35F6C4D1F2F2EC3B56D2DDA96FA23496")
+
 	addARandom("7C9935A0B07694AA0C6D10E4DB6B1ADD2FD81A25CCB148032DCD739936737F2DB505D7CFAD1B497499323C8686325E47")
 	addARandom("33B3C07507E4201748494D832B6EE2A6")
 	addARandom("7C9935A0B07694AA0C6D10E4DB6B1ADD2FD81A25CCB148032DCD739936737F2DB505D7CFAD1B497499323C8686325E4792F267AAFA3F87CA60D01CB54F29202A")
@@ -46,16 +49,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("ct", hex.EncodeToString(ct))
+	//fmt.Println("ct", hex.EncodeToString(ct))
 	fmt.Println("ssEnc", hex.EncodeToString(ssEnc))
+
+	if !bytes.Equal(ssEnc, expSS) {
+		panic("encapsulate not what expected")
+	}
 
 	ssDec, err := fkem.Dencapsulate(sk, ct)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("ssDec", hex.EncodeToString(ssDec))
 
 	if !bytes.Equal(ssEnc, ssDec) {
-		panic("encapsulate -> decapsulate didn't work")
+		panic("encapsulate -> dencapsulate didn't work")
 	}
 
 }
