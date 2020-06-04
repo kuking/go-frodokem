@@ -3,6 +3,7 @@ package go_frodokem
 import (
 	"encoding/binary"
 	"errors"
+	"math"
 )
 
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
@@ -91,7 +92,103 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	}
 	if len(sk) != k.lenSkBytes {
 		err = errors.New("incorrect secret key length")
+		return
 	}
+
+	c1, c2 := k.unwrapCt(ct)
+	s, seedA, b, Stransposed, pkh := k.unwrapSk(sk)
+	S := matrixTranspose(Stransposed)
+	Bprime := k.unpack(c1, k.mBar, k.n)
+	C := k.unpack(c2, k.mBar, k.nBar)
+	BprimeS := matrixMulWithMod(Bprime, S, k.q)
+	M := matrixSubWithMod(C, BprimeS, k.q)
+	muPrime := k.decode(M) // fmt.Println("mu'", hex.EncodeToString(muPrime))
+
+	seedSEprime_kprime := k.shake(append(pkh, muPrime...), k.lenSeedSE/8+k.lenK/8)
+	seedSEprime := seedSEprime_kprime[0 : k.lenSeedSE/8] //	fmt.Println("seedSE'", hex.EncodeToString(seedSEprime))
+	kprime := seedSEprime_kprime[k.lenSeedSE/8:]         //	fmt.Println("k'", hex.EncodeToString(kprime))
+
+	rBytesTmp := make([]byte, len(seedSEprime)+1)
+	rBytesTmp[0] = 0x96
+	copy(rBytesTmp[1:], seedSEprime)
+	rBytes := k.shake(rBytesTmp, (2*k.mBar*k.n+k.mBar*k.mBar)*k.lenChi/8)
+	r := unpackUint16(rBytes) // fmt.Println("r", r)
+	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)
+	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n)
+	A := k.gen(seedA)
+	Bprimeprime := matrixAdd(matrixMulWithMod2(Sprime, A, k.q), Eprime)
+	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar)
+	B := k.unpack(b, k.n, k.nBar)
+	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
+	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
+
+	bothC := append(c1, c2...)
+	if uint16Equals(Bprime, Bprimeprime) && uint16Equals(C, Cprime) {
+		ssDec = k.shake(append(bothC, kprime...), k.lenSS/8)
+	} else {
+		ssDec = k.shake(append(bothC, s...), k.lenSS/8)
+	}
+	return
+}
+
+func uint16Equals(a [][]uint16, b [][]uint16) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if len(a[i]) != len(b[i]) {
+			return false
+		}
+		for j := 0; j < len(a[i]); j++ {
+			if a[i][j] != b[i][j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
+	ofs := 0
+	len := k.mBar * k.n * k.D / 8
+	c1 = ct[ofs:len] // fmt.Println("c1", hex.EncodeToString(c1))
+	ofs += len
+	len = k.mBar * k.mBar * k.D / 8
+	c2 = ct[ofs : ofs+len] // fmt.Println("c2", hex.EncodeToString(c2))
+	return
+}
+
+func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, Stransposed [][]int16, pkh []uint8) {
+	ofs := 0
+	len := k.lenS / 8
+	s = sk[ofs:len] // fmt.Println("s", hex.EncodeToString(s))
+	ofs += len
+	len = k.lenSeedA / 8
+	seedA = sk[ofs : ofs+len] // fmt.Println("seedA", hex.EncodeToString(seedA))
+	ofs += len
+	len = k.D * k.n * k.nBar / 8
+	b = sk[ofs : ofs+len] // fmt.Println("b", hex.EncodeToString(b))
+
+	ofs += len
+	len = k.n * k.nBar * 2
+	Sbytes := sk[ofs : ofs+len]
+
+	idx := 0
+	Stransposed = make([][]int16, k.nBar)
+	for i := 0; i < k.nBar; i++ {
+		Stransposed[i] = make([]int16, k.n)
+		for j := 0; j < k.n; j++ {
+			Stransposed[i][j] = int16(Sbytes[idx])
+			idx++
+			Stransposed[i][j] |= int16(Sbytes[idx]) << 8
+			idx++
+		}
+	}
+	// fmt.Println("S^T", Stransposed)
+
+	ofs += len
+	len = k.lenPkh / 8
+	pkh = sk[ofs : ofs+len] // fmt.Println("pkh", hex.EncodeToString(pkh))
 
 	return
 }
@@ -127,6 +224,27 @@ func uMatrixAdd(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
 			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixSubWithMod(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	nrowsy := len(Y)
+	ncolsy := len(Y[0])
+	if nrowsx != nrowsy || ncolsx != ncolsy {
+		panic("can't sub these matrices")
+	}
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < nrowsx; i++ {
+		R[i] = make([]uint16, ncolsx)
+		for j := 0; j < ncolsx; j++ {
+			R[i][j] = uint16(int(X[i][j]) - int(Y[i][j]))
 			if q != 0 {
 				R[i][j] %= q
 			}
@@ -317,6 +435,36 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 		}
 	}
 	return
+}
+
+// FrodoKEM specification, Algorithm 2
+func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
+	b = make([]uint8, k.B*k.mBar*k.nBar/8)
+	twoPowerB := int32(2 << (k.B - 1))
+	twoPowerBf := float64(int(2 << (k.B - 1)))
+	bIdx := 0
+	BBit := 0
+	for i := 0; i < k.mBar; i++ {
+		for j := 0; j < k.nBar; j++ {
+			tmp3 := uint8(int32(math.Round(float64(K[i][j])*twoPowerBf/float64(k.q))) % twoPowerB) //FIXME: please do this better
+			for l := 0; l < k.B; l++ {
+				bit := uint8BitN(tmp3, l)
+				if bit == 1 {
+					b[bIdx] = uint8setBitN(b[bIdx], BBit)
+				}
+				BBit++
+				if BBit == 8 {
+					bIdx++
+					BBit = 0
+				}
+			}
+		}
+	}
+	return
+}
+
+func uint8setBitN(val uint8, i int) uint8 {
+	return val | (1 << i)
 }
 
 func uint16BitN(val uint16, i int) uint8 {
