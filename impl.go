@@ -22,7 +22,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	Stransposed := k.sampleMatrix(r[0:k.n*k.nBar], k.nBar, k.n) //fmt.Println("S^T", Stransposed)
 	S := matrixTranspose(Stransposed)
 	E := k.sampleMatrix(r[k.n*k.nBar:2*k.n*k.nBar], k.n, k.nBar)
-	B := matrixAdd(matrixMulWithMod(A, S, k.q), E)
+	B := matrixAddWithMod(matrixMulWithMod(A, S, k.q), E, k.q)
 	b := k.pack(B) // fmt.Println("b", hex.EncodeToString(b))
 	pk = append(seedA, b...)
 	pkh := k.shake(pk, k.lenPkh/8) // fmt.Println("pkh", strings.ToUpper(hex.EncodeToString(pkh)))
@@ -67,11 +67,11 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)            // fmt.Println("S'", Sprime)
 	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n) // fmt.Println("E'", Eprime)
 	A := k.gen(seedA)
-	Bprime := matrixAdd(matrixMulWithMod2(Sprime, A, k.q), Eprime)                            // fmt.Println("B'", Bprime)
+	Bprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)                // fmt.Println("B'", Bprime)
 	c1 := k.pack(Bprime)                                                                      // fmt.Println("c1", hex.EncodeToString(c1))
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar) // fmt.Println("E''", Eprimeprime)
 	B := k.unpack(b, k.n, k.nBar)
-	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
+	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	C := uMatrixAdd(V, k.encode(mu), k.q)
 	c2 := k.pack(C) // 	fmt.Println("c2", hex.EncodeToString(c2))
 	ct = append(c1, c2...)
@@ -116,10 +116,10 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)
 	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n)
 	A := k.gen(seedA)
-	Bprimeprime := matrixAdd(matrixMulWithMod2(Sprime, A, k.q), Eprime)
+	Bprimeprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar)
 	B := k.unpack(b, k.n, k.nBar)
-	V := matrixAdd(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime)
+	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
 
 	bothC := append(c1, c2...)
@@ -193,7 +193,7 @@ func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, St
 	return
 }
 
-func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
+func matrixAddWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
 	nrowsx := len(X)
 	ncolsx := len(X[0])
 	nrowsy := len(Y)
@@ -206,6 +206,9 @@ func matrixAdd(X [][]uint16, Y [][]int16) (R [][]uint16) {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
 			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
 		}
 	}
 	return
