@@ -443,15 +443,19 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 // FrodoKEM specification, Algorithm 2
 func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
 	b = make([]uint8, k.B*k.mBar*k.nBar/8)
+	fixedQ := float64(k.q)
+	if k.q == 0 {
+		fixedQ = float64(65535)
+	}
 	twoPowerB := int32(2 << (k.B - 1))
 	twoPowerBf := float64(int(2 << (k.B - 1)))
 	bIdx := 0
 	BBit := 0
 	for i := 0; i < k.mBar; i++ {
 		for j := 0; j < k.nBar; j++ {
-			tmp3 := uint8(int32(math.Round(float64(K[i][j])*twoPowerBf/float64(k.q))) % twoPowerB) //FIXME: please do this better
+			tmp := uint8(int32(math.Round(float64(K[i][j])*twoPowerBf/fixedQ)) % twoPowerB) //FIXME: please do this better
 			for l := 0; l < k.B; l++ {
-				bit := uint8BitN(tmp3, l)
+				bit := uint8BitN(tmp, l)
 				if bit == 1 {
 					b[bIdx] = uint8setBitN(b[bIdx], BBit)
 				}
