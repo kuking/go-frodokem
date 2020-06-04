@@ -59,6 +59,14 @@ func (td *TestData) doTest(t *testing.T) {
 		t.Errorf("Expected SS (during encapsulate) not equal for file %v count %v\n[%v]\n[%v]\n",
 			td.filename, td.count, hex.EncodeToString(td.expSs), hex.EncodeToString(ssEnc))
 	}
+	ssDec, err := td.kem.Dencapsulate(sk, ct)
+	if err != nil {
+		t.Error(err)
+	}
+	if !bytes.Equal(ssDec, ssEnc) {
+		t.Errorf("Expected SS (during dencapsulate) not equal for file %v count %v\n[%v]\n[%v]\n",
+			td.filename, td.count, hex.EncodeToString(td.expSs), hex.EncodeToString(ssDec))
+	}
 }
 
 func processFile(t *testing.T, kemBuilder func() FrodoKEM, filename string) {
