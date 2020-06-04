@@ -45,6 +45,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error) {
 	if len(pk) != k.lenSeedA/8+k.D*k.n*k.nBar/8 {
 		err = errors.New("incorrect public key length")
+		return
 	}
 	seedA := pk[0 : k.lenSeedA/8]
 	b := pk[k.lenSeedA/8:]
@@ -84,6 +85,14 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 }
 
 func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err error) {
+	if len(ct) != k.lenCtBytes {
+		err = errors.New("incorrect cipher length")
+		return
+	}
+	if len(sk) != k.lenSkBytes {
+		err = errors.New("incorrect secret key length")
+	}
+
 	return
 }
 
