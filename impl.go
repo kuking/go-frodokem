@@ -362,7 +362,7 @@ func matrixAddWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
 	for i := 0; i < nrowsx; i++ {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			R[i][j] = uint16(int16(X[i][j]) + Y[i][j])
 			if q != 0 {
 				R[i][j] %= q
 			}
@@ -383,7 +383,7 @@ func uMatrixAdd(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
 	for i := 0; i < nrowsx; i++ {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			R[i][j] = X[i][j] + Y[i][j]
 			if q != 0 {
 				R[i][j] %= q
 			}
@@ -404,7 +404,7 @@ func matrixSubWithMod(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
 	for i := 0; i < nrowsx; i++ {
 		R[i] = make([]uint16, ncolsx)
 		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) - int(Y[i][j]))
+			R[i][j] = X[i][j] - Y[i][j]
 			if q != 0 {
 				R[i][j] %= q
 			}
