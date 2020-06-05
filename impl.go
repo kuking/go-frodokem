@@ -113,39 +113,26 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	copy(rBytesTmp[1:], seedSEprime)
 	rBytes := k.shake(rBytesTmp, (2*k.mBar*k.n+k.mBar*k.mBar)*k.lenChi/8)
 	r := unpackUint16(rBytes) // fmt.Println("r", r)
+
 	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)
 	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n)
 	A := k.gen(seedA)
 	Bprimeprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)
+	if !uint16Equals(Bprime, Bprimeprime) {
+		ssDec = k.shake(append(ct, s...), k.lenSS/8)
+	}
+
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar)
 	B := k.unpack(b, k.n, k.nBar)
 	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
 
-	bothC := append(c1, c2...)
-	if uint16Equals(Bprime, Bprimeprime) && uint16Equals(C, Cprime) {
-		ssDec = k.shake(append(bothC, kprime...), k.lenSS/8)
+	if uint16Equals(C, Cprime) {
+		ssDec = k.shake(append(ct, kprime...), k.lenSS/8)
 	} else {
-		ssDec = k.shake(append(bothC, s...), k.lenSS/8)
+		ssDec = k.shake(append(ct, s...), k.lenSS/8)
 	}
 	return
-}
-
-func uint16Equals(a [][]uint16, b [][]uint16) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if len(a[i]) != len(b[i]) {
-			return false
-		}
-		for j := 0; j < len(a[i]); j++ {
-			if a[i][j] != b[i][j] {
-				return false
-			}
-		}
-	}
-	return true
 }
 
 func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
@@ -191,134 +178,6 @@ func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, St
 	pkh = sk[ofs : ofs+len] // fmt.Println("pkh", hex.EncodeToString(pkh))
 
 	return
-}
-
-func matrixAddWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
-	nrowsx := len(X)
-	ncolsx := len(X[0])
-	nrowsy := len(Y)
-	ncolsy := len(Y[0])
-	if nrowsx != nrowsy || ncolsx != ncolsy {
-		panic("can't add these matrices")
-	}
-	R = make([][]uint16, nrowsx)
-	for i := 0; i < nrowsx; i++ {
-		R[i] = make([]uint16, ncolsx)
-		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
-			if q != 0 {
-				R[i][j] %= q
-			}
-		}
-	}
-	return
-}
-
-func uMatrixAdd(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
-	nrowsx := len(X)
-	ncolsx := len(X[0])
-	nrowsy := len(Y)
-	ncolsy := len(Y[0])
-	if nrowsx != nrowsy || ncolsx != ncolsy {
-		panic("can't add these matrices")
-	}
-	R = make([][]uint16, nrowsx)
-	for i := 0; i < nrowsx; i++ {
-		R[i] = make([]uint16, ncolsx)
-		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
-			if q != 0 {
-				R[i][j] %= q
-			}
-		}
-	}
-	return
-}
-
-func matrixSubWithMod(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
-	nrowsx := len(X)
-	ncolsx := len(X[0])
-	nrowsy := len(Y)
-	ncolsy := len(Y[0])
-	if nrowsx != nrowsy || ncolsx != ncolsy {
-		panic("can't sub these matrices")
-	}
-	R = make([][]uint16, nrowsx)
-	for i := 0; i < nrowsx; i++ {
-		R[i] = make([]uint16, ncolsx)
-		for j := 0; j < ncolsx; j++ {
-			R[i][j] = uint16(int(X[i][j]) - int(Y[i][j]))
-			if q != 0 {
-				R[i][j] %= q
-			}
-		}
-	}
-	return
-}
-
-func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
-	nrowsx := len(X)
-	ncolsx := len(X[0])
-	//nrowsy := len(y)
-	ncolsy := len(Y[0])
-	R = make([][]uint16, nrowsx)
-	for i := 0; i < len(R); i++ {
-		R[i] = make([]uint16, ncolsy)
-	}
-	for i := 0; i < nrowsx; i++ {
-		for j := 0; j < ncolsy; j++ {
-			for k := 0; k < ncolsx; k++ {
-				R[i][j] += uint16(int32(X[i][k]) * int32(Y[k][j]))
-			}
-			if q != 0 {
-				R[i][j] %= q
-			}
-		}
-	}
-	return
-}
-
-func matrixMulWithMod2(X [][]int16, Y [][]uint16, q uint16) (R [][]uint16) {
-	nrowsx := len(X)
-	ncolsx := len(X[0])
-	//nrowsy := len(y)
-	ncolsy := len(Y[0])
-	R = make([][]uint16, nrowsx)
-	for i := 0; i < len(R); i++ {
-		R[i] = make([]uint16, ncolsy)
-	}
-	for i := 0; i < nrowsx; i++ {
-		for j := 0; j < ncolsy; j++ {
-			for k := 0; k < ncolsx; k++ {
-				R[i][j] += uint16(int32(X[i][k]) * int32(Y[k][j]))
-			}
-			if q != 0 {
-				R[i][j] %= q
-			}
-		}
-	}
-	return
-}
-
-func matrixTranspose(O [][]int16) (T [][]int16) {
-	T = make([][]int16, len(O[0]))
-	for x := 0; x < len(T); x++ {
-		T[x] = make([]int16, len(O))
-		for y := 0; y < len(O); y++ {
-			T[x][y] = O[y][x]
-		}
-	}
-	return
-}
-
-func unpackUint16(bytes []byte) (r []uint16) {
-	r = make([]uint16, len(bytes)/2)
-	j := 0
-	for i := 0; i+1 < len(bytes); i += 2 {
-		r[j] = binary.LittleEndian.Uint16(bytes[i : i+2])
-		j++
-	}
-	return r
 }
 
 func (k *FrodoKEM) sample(r uint16) (e int16) {
@@ -470,6 +329,155 @@ func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
 	return
 }
 
+func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
+	k.rng = newRng
+}
+
+func uint16Equals(a [][]uint16, b [][]uint16) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if len(a[i]) != len(b[i]) {
+			return false
+		}
+		for j := 0; j < len(a[i]); j++ {
+			if a[i][j] != b[i][j] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func matrixAddWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	nrowsy := len(Y)
+	ncolsy := len(Y[0])
+	if nrowsx != nrowsy || ncolsx != ncolsy {
+		panic("can't add these matrices")
+	}
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < nrowsx; i++ {
+		R[i] = make([]uint16, ncolsx)
+		for j := 0; j < ncolsx; j++ {
+			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func uMatrixAdd(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	nrowsy := len(Y)
+	ncolsy := len(Y[0])
+	if nrowsx != nrowsy || ncolsx != ncolsy {
+		panic("can't add these matrices")
+	}
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < nrowsx; i++ {
+		R[i] = make([]uint16, ncolsx)
+		for j := 0; j < ncolsx; j++ {
+			R[i][j] = uint16(int(X[i][j]) + int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixSubWithMod(X [][]uint16, Y [][]uint16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	nrowsy := len(Y)
+	ncolsy := len(Y[0])
+	if nrowsx != nrowsy || ncolsx != ncolsy {
+		panic("can't sub these matrices")
+	}
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < nrowsx; i++ {
+		R[i] = make([]uint16, ncolsx)
+		for j := 0; j < ncolsx; j++ {
+			R[i][j] = uint16(int(X[i][j]) - int(Y[i][j]))
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	//nrowsy := len(y)
+	ncolsy := len(Y[0])
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < len(R); i++ {
+		R[i] = make([]uint16, ncolsy)
+	}
+	for i := 0; i < nrowsx; i++ {
+		for j := 0; j < ncolsy; j++ {
+			for k := 0; k < ncolsx; k++ {
+				R[i][j] += uint16(int16(X[i][k]) * Y[k][j])
+			}
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixMulWithMod2(X [][]int16, Y [][]uint16, q uint16) (R [][]uint16) {
+	nrowsx := len(X)
+	ncolsx := len(X[0])
+	//nrowsy := len(y)
+	ncolsy := len(Y[0])
+	R = make([][]uint16, nrowsx)
+	for i := 0; i < len(R); i++ {
+		R[i] = make([]uint16, ncolsy)
+	}
+	for i := 0; i < nrowsx; i++ {
+		for j := 0; j < ncolsy; j++ {
+			for k := 0; k < ncolsx; k++ {
+				R[i][j] += uint16(X[i][k] * int16(Y[k][j]))
+			}
+			if q != 0 {
+				R[i][j] %= q
+			}
+		}
+	}
+	return
+}
+
+func matrixTranspose(O [][]int16) (T [][]int16) {
+	T = make([][]int16, len(O[0]))
+	for x := 0; x < len(T); x++ {
+		T[x] = make([]int16, len(O))
+		for y := 0; y < len(O); y++ {
+			T[x][y] = O[y][x]
+		}
+	}
+	return
+}
+
+func unpackUint16(bytes []byte) (r []uint16) {
+	r = make([]uint16, len(bytes)/2)
+	j := 0
+	for i := 0; i+1 < len(bytes); i += 2 {
+		r[j] = binary.LittleEndian.Uint16(bytes[i : i+2])
+		j++
+	}
+	return r
+}
+
 func uint8setBitN(val uint8, i int) uint8 {
 	return val | (1 << i)
 }
@@ -477,10 +485,7 @@ func uint8setBitN(val uint8, i int) uint8 {
 func uint16BitN(val uint16, i int) uint8 {
 	return uint8((val >> i) & 1)
 }
+
 func uint8BitN(val uint8, i int) uint8 {
 	return (val >> i) & 1
-}
-
-func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
-	k.rng = newRng
 }
