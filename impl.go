@@ -424,12 +424,14 @@ func matrixMulWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
 	}
 	for i := 0; i < nrowsx; i++ {
 		for j := 0; j < ncolsy; j++ {
+			var res uint16
 			for k := 0; k < ncolsx; k++ {
-				R[i][j] += uint16(int16(X[i][k]) * Y[k][j])
+				res += uint16(int16(X[i][k]) * Y[k][j])
 			}
 			if q != 0 {
-				R[i][j] %= q
+				res %= q
 			}
+			R[i][j] = res
 		}
 	}
 	return
@@ -446,12 +448,14 @@ func matrixMulWithMod2(X [][]int16, Y [][]uint16, q uint16) (R [][]uint16) {
 	}
 	for i := 0; i < nrowsx; i++ {
 		for j := 0; j < ncolsy; j++ {
+			var res uint16
 			for k := 0; k < ncolsx; k++ {
-				R[i][j] += uint16(X[i][k] * int16(Y[k][j]))
+				res += uint16(X[i][k] * int16(Y[k][j]))
 			}
 			if q != 0 {
-				R[i][j] %= q
+				res %= q
 			}
+			R[i][j] = res
 		}
 	}
 	return
