@@ -53,21 +53,19 @@ func runOne(name string, batchSize int, kem frodo.FrodoKEM) {
 		float64(batchSize)/elapsed.Seconds(), atomic.LoadInt32(&flying))
 }
 
-
 func soakTest() {
 	maxGoProcs := runtime.NumCPU() - 1
 	runtime.GOMAXPROCS(maxGoProcs)
 	QtyPerSuite := 1_000_000
 	batchSize := 1_000
-
-	fmt.Printf("SoakTest, GenKey->Encaps->Decaps->DecapsFast (%v cihper-variants, %v batch-size, %v in total) ...\n",
-		len(suites()), batchSize, QtyPerSuite*len(suites()))
-	fmt.Printf("Running %v goroutines concurrently\n", maxGoProcs)
-	flying = 0
+	atomic.StoreInt32(&flying, 0)
+	fmt.Printf("SoakTest: GenKey->Encaps->Decaps->DecapsFast\n"+
+		" - %v cihper-variants\n - %v batch-size\n - %v in-total\n - %v goroutines-concurrency\n\n",
+		len(suites()), batchSize, QtyPerSuite*len(suites()), maxGoProcs)
 	for name, kem := range suites() {
 		for i := 0; i < QtyPerSuite/batchSize; i++ {
-			for ; atomic.LoadInt32(&flying) >= 100; {
-				time.Sleep(time.Second * 10)
+			for atomic.LoadInt32(&flying) >= 250 {
+				time.Sleep(time.Second * 30)
 				logCompleted()
 				runtime.GC()
 			}
@@ -75,12 +73,13 @@ func soakTest() {
 			go runOne(name, batchSize, kem)
 		}
 	}
-	for ; atomic.LoadInt32(&flying) != 0; {
-		time.Sleep(time.Second * 10)
+	for atomic.LoadInt32(&flying) != 0 {
+		time.Sleep(time.Second * 30)
 		logCompleted()
 		runtime.GC()
 	}
-	println("Finished.", atomic.LoadInt64(&grandTotal))
+	println("Finished. Last status:")
+	logCompleted()
 }
 
 func main() {
