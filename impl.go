@@ -135,6 +135,34 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	return
 }
 
+// Simplified Dencapsulate, it can be up to 20 times faster than the full-version.
+// Its accuracy needs to be proven, but it passes all KAT tests as in Jun/20.
+func (k *FrodoKEM) DencapsulateFast(sk []uint8, ct []uint8) (ssDec []uint8, err error) {
+	if len(ct) != k.lenCtBytes {
+		err = errors.New("incorrect cipher length")
+		return
+	}
+	if len(sk) != k.lenSkBytes {
+		err = errors.New("incorrect secret key length")
+		return
+	}
+
+	c1, c2 := k.unwrapCt(ct)
+	_, _, _, Stransposed, pkh := k.unwrapSk(sk)
+	S := matrixTranspose(Stransposed)
+	Bprime := k.unpack(c1, k.mBar, k.n)
+	C := k.unpack(c2, k.mBar, k.nBar)
+	BprimeS := matrixMulWithMod(Bprime, S, k.q)
+	M := matrixSubWithMod(C, BprimeS, k.q)
+	muPrime := k.decode(M) // fmt.Println("mu'", hex.EncodeToString(muPrime))
+
+	seedSEprime_kprime := k.shake(append(pkh, muPrime...), k.lenSeedSE/8+k.lenK/8)
+	kprime := seedSEprime_kprime[k.lenSeedSE/8:] //	fmt.Println("k'", hex.EncodeToString(kprime))
+
+	ssDec = k.shake(append(ct, kprime...), k.lenSS/8)
+	return
+}
+
 func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
 	ofs := 0
 	len := k.mBar * k.n * k.D / 8
