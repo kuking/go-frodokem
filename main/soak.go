@@ -24,8 +24,8 @@ func suites() map[string]frodo.FrodoKEM {
 }
 
 func logCompleted() {
-	fmt.Printf("%v - %v completed (%v in fly.)\n",
-		time.Now().Format(time.RFC822), atomic.LoadInt64(&grandTotal), atomic.LoadInt32(&flying))
+	fmt.Printf("%v - Progress report: %v completed (%v in fly.)\n",
+		time.Now().Format(time.Stamp), atomic.LoadInt64(&grandTotal), atomic.LoadInt32(&flying))
 }
 
 func runOne(name string, batchSize int, kem frodo.FrodoKEM) {
@@ -49,7 +49,7 @@ func runOne(name string, batchSize int, kem frodo.FrodoKEM) {
 	atomic.AddInt64(&grandTotal, int64(batchSize))
 	atomic.AddInt32(&flying, -1)
 	fmt.Printf("%v - %v batch of %v completed in %2.2fs or %2.2f/s (%v in fly.).\n",
-		time.Now().Format(time.RFC822), name, batchSize, elapsed.Seconds(),
+		time.Now().Format(time.Stamp), name, batchSize, elapsed.Seconds(),
 		float64(batchSize)/elapsed.Seconds(), atomic.LoadInt32(&flying))
 }
 
@@ -65,7 +65,7 @@ func soakTest() {
 	for name, kem := range suites() {
 		for i := 0; i < QtyPerSuite/batchSize; i++ {
 			for atomic.LoadInt32(&flying) >= 250 {
-				time.Sleep(time.Second * 30)
+				time.Sleep(time.Second * 20)
 				logCompleted()
 				runtime.GC()
 			}
@@ -74,7 +74,7 @@ func soakTest() {
 		}
 	}
 	for atomic.LoadInt32(&flying) != 0 {
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * 5)
 		logCompleted()
 		runtime.GC()
 	}
