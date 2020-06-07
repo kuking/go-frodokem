@@ -47,3 +47,14 @@ func Benchmark_FrodoKEM_Dencapsulate(b *testing.B) {
 		})
 	}
 }
+func Benchmark_FrodoKEM_DencapsulateFast(b *testing.B) {
+	for name, kem := range suites() {
+		b.Run(name, func(b *testing.B) {
+			pk, sk := kem.Keygen()
+			ct, _, _ := kem.Encapsulate(pk)
+			for i := 0; i < b.N; i++ {
+				_, _ = kem.DencapsulateFast(sk, ct)
+			}
+		})
+	}
+}
