@@ -1,18 +1,18 @@
 # FrodoKEM in Golang 
-(https://frodokem.org)
+Golang implementation of FrodoKEM: a Practical quantum-secure key encapsulation from generic lattices (https://frodokem.org).
 
-Golang implementation of FrodoKEM spec. Currently passing all KAT specs tests for all key sizes and variants (AES/Shake).
-(https://github.com/microsoft/PQCrypto-LWEKE/tree/master/KAT).
+This implementation passes all KAT tests from the reference specification for all defined key sizes (640 / 976 / 1344) and variants (AES / SHAKE).
 
 ## API
 There is a demo app that uses every method in the API. i.e. methods for listing variants, for creating key pairs,
 encapsulating/dencapsulating kems, auxiliary methods reporting cipher-text length, key-length, variant name, etc. 
-You can see it here: [demo.go](mains/demo/demo.go). The built binary will be in `bin/demo` (use `make build` to 
+You can find it here: [demo.go](mains/demo/demo.go). The built binary will be placed in `bin/demo` (use `make build` to 
 generate it).
 
-You can also read the documentation using `go doc -all` on this package, or look at [impl.go](impl.go) and [types.go](types.go).
+You can also read the documentation using `go doc -all` in this package, or look at [impl.go](impl.go) and 
+[types.go](types.go).
 
-_Minimal Example:_
+_Complete usage Snippet:_
 ```go
 import frodo "github.com/kuking/go-frodokem"
 
@@ -22,6 +22,8 @@ ct, ssEnc, _ := kem.Encapsulate(pk)   // cipher-text, shared-secret
 ssDec, _ := kem.Dencapsulate(sk, ct)  // recovered shared-secret
 // ssEnc == ssDec
 ```
+#### Note on Concurrency
+This library is stateless. A FrodoKEM struct (as returned by i.e. `frodo.Frodo640AES()`) can be used concurrently.
 
 ### Pending
 - implement optimisations with SIMD instructions

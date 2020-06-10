@@ -158,6 +158,11 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	return
 }
 
+// Overrides the default random number generator (crypto/rand)
+func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
+	k.rng = newRng
+}
+
 func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
 	ofs := 0
 	len := k.mBar * k.n * k.d / 8
@@ -350,10 +355,6 @@ func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
 		}
 	}
 	return
-}
-
-func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
-	k.rng = newRng
 }
 
 func (k *FrodoKEM) genSHAKE128(seedA []byte) (A [][]uint16) {
