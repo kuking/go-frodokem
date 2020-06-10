@@ -7,26 +7,32 @@ import (
 	"math"
 )
 
+// Returns the name of this particular FrodoKEM variant, i.e. Frodo640AES
 func (k *FrodoKEM) Name() string {
 	return k.name
 }
 
+// Returns the shared secret (in bytes) this variant generates
 func (k *FrodoKEM) SharedSecretLen() int {
 	return k.lenSS / 8
 }
 
+// Returns the public key length (in bytes) for this variant
 func (k *FrodoKEM) PublicKeyLen() int {
 	return k.lenPkBytes
 }
 
+// Returns the secret key length (in bytes) for this variant
 func (k *FrodoKEM) SecretKeyLen() int {
 	return k.lenSkBytes
 }
 
+// Returns the cipher-text length (in bytes) encapsulating the shared secret for this variant
 func (k *FrodoKEM) CipherTextLen() int {
 	return k.lenCtBytes
 }
 
+// Generate a key-pair
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sSeedSEz := make([]byte, k.lenS/8+k.lenSeedSE/8+k.lenZ/8)
 	k.rng(sSeedSEz) //	fmt.Println("randomness(", len(sSeedSEz), ")", strings.ToUpper(hex.EncodeToString(sSeedSEz)))
@@ -64,6 +70,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	return
 }
 
+// Generate a KEM returning the cipher-text and shared-secret
 func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error) {
 	if len(pk) != k.lenSeedA/8+k.d*k.n*k.nBar/8 {
 		err = errors.New("incorrect public key length")
@@ -100,6 +107,7 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	return
 }
 
+// Returns the shared secret by using the provided cipher-text and secret-key
 func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err error) {
 	if len(ct) != k.lenCtBytes {
 		err = errors.New("incorrect cipher length")

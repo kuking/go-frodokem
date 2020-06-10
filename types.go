@@ -11,6 +11,7 @@ var variants = []FrodoKEM{
 	Frodo1344AES(), Frodo1344SHAKE(),
 }
 
+// Returns all the FrodoKEM variants supported as an array
 func Variants() []FrodoKEM {
 	return variants
 }
@@ -43,6 +44,7 @@ type FrodoKEM struct {
 	rng             func([]byte)
 }
 
+// Returns a new FrodoKEM 640 AES variant (Generates 128 bits of secret)
 func Frodo640AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo640AES",
@@ -73,6 +75,7 @@ func Frodo640AES() (f FrodoKEM) {
 	return
 }
 
+// Returns a new FrodoKEM 640 SHAKE variant (Generates 128 bits of secret)
 func Frodo640SHAKE() (f FrodoKEM) {
 	f = Frodo640AES()
 	f.name = "Frodo640Shake"
@@ -81,6 +84,7 @@ func Frodo640SHAKE() (f FrodoKEM) {
 	return
 }
 
+// Returns a new FrodoKEM 976 AES variant (Generates 192 bits of secret)
 func Frodo976AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo976AES",
@@ -111,6 +115,7 @@ func Frodo976AES() (f FrodoKEM) {
 	return
 }
 
+// Returns a new FrodoKEM 976 SHAKE variant (Generates 192 bits of secret)
 func Frodo976SHAKE() (f FrodoKEM) {
 	f = Frodo976AES()
 	f.name = "Frodo976Shake"
@@ -118,6 +123,7 @@ func Frodo976SHAKE() (f FrodoKEM) {
 	return
 }
 
+// Returns a new FrodoKEM 1344 AES variant (Generates 256 bits of secret)
 func Frodo1344AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo1344AES",
@@ -148,6 +154,7 @@ func Frodo1344AES() (f FrodoKEM) {
 	return
 }
 
+// Returns a new FrodoKEM 1344 SHAKE variant (Generates 256 bits of secret)
 func Frodo1344SHAKE() (f FrodoKEM) {
 	f = Frodo1344AES()
 	f.name = "Frodo1344Shake"
