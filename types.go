@@ -20,12 +20,12 @@ type FrodoKEM struct {
 	name            string
 	errDistribution []uint16
 	tChi            []uint16
-	D               int
+	d               int
 	q               uint16
 	n               int
 	nBar            int
 	mBar            int
-	B               int
+	b               int
 	lenSeedA        int
 	lenZ            int
 	lenMu           int
@@ -47,12 +47,12 @@ func Frodo640AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo640AES",
 		errDistribution: []uint16{9288, 8720, 7216, 5264, 3384, 1918, 958, 422, 164, 56, 17, 4, 1},
-		D:               15,
+		d:               15,
 		q:               32768,
 		n:               640,
 		nBar:            8,
 		mBar:            8,
-		B:               2,
+		b:               2,
 		lenSeedA:        128,
 		lenZ:            128,
 		lenMu:           128,
@@ -85,12 +85,12 @@ func Frodo976AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo976AES",
 		errDistribution: []uint16{11278, 10277, 7774, 4882, 2545, 1101, 396, 118, 29, 6, 1},
-		D:               16,
+		d:               16,
 		q:               0, // means no mod in 16 bits uint
 		n:               976,
 		nBar:            8,
 		mBar:            8,
-		B:               3,
+		b:               3,
 		lenSeedA:        128,
 		lenZ:            128,
 		lenMu:           192,
@@ -122,12 +122,12 @@ func Frodo1344AES() (f FrodoKEM) {
 	f = FrodoKEM{
 		name:            "Frodo1344AES",
 		errDistribution: []uint16{18286, 14320, 6876, 2023, 364, 40, 2},
-		D:               16,
+		d:               16,
 		q:               0,
 		n:               1344,
 		nBar:            8,
 		mBar:            8,
-		B:               4,
+		b:               4,
 		lenSeedA:        128,
 		lenZ:            128,
 		lenMu:           256,

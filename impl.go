@@ -65,7 +65,7 @@ func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 }
 
 func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error) {
-	if len(pk) != k.lenSeedA/8+k.D*k.n*k.nBar/8 {
+	if len(pk) != k.lenSeedA/8+k.d*k.n*k.nBar/8 {
 		err = errors.New("incorrect public key length")
 		return
 	}
@@ -88,7 +88,7 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	Sprime := k.sampleMatrix(r[0:k.mBar*k.n], k.mBar, k.n)            // fmt.Println("S'", Sprime)
 	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n) // fmt.Println("E'", Eprime)
 	A := k.gen(seedA)
-	Bprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)                // fmt.Println("B'", Bprime)
+	Bprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)                // fmt.Println("b'", Bprime)
 	c1 := k.pack(Bprime)                                                                      // fmt.Println("c1", hex.EncodeToString(c1))
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar) // fmt.Println("E''", Eprimeprime)
 	B := k.unpack(b, k.n, k.nBar)
@@ -152,10 +152,10 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 
 func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
 	ofs := 0
-	len := k.mBar * k.n * k.D / 8
+	len := k.mBar * k.n * k.d / 8
 	c1 = ct[ofs:len] // fmt.Println("c1", hex.EncodeToString(c1))
 	ofs += len
-	len = k.mBar * k.mBar * k.D / 8
+	len = k.mBar * k.mBar * k.d / 8
 	c2 = ct[ofs : ofs+len] // fmt.Println("c2", hex.EncodeToString(c2))
 	return
 }
@@ -168,7 +168,7 @@ func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, St
 	len = k.lenSeedA / 8
 	seedA = sk[ofs : ofs+len] // fmt.Println("seedA", hex.EncodeToString(seedA))
 	ofs += len
-	len = k.D * k.n * k.nBar / 8
+	len = k.d * k.n * k.nBar / 8
 	b = sk[ofs : ofs+len] // fmt.Println("b", hex.EncodeToString(b))
 
 	ofs += len
@@ -227,15 +227,15 @@ func (k *FrodoKEM) sampleMatrix(r []uint16, n1 int, n2 int) (E [][]int16) {
 func (k *FrodoKEM) pack(C [][]uint16) (r []byte) {
 	rows := len(C)
 	cols := len(C[0])
-	r = make([]byte, k.D*rows*cols/8)
+	r = make([]byte, k.d*rows*cols/8)
 	var ri = 0
 	var packed uint8
 	var bits uint8
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			val := C[i][j]
-			for b := 0; b < k.D; b++ {
-				bit := uint16BitN(val, k.D-b-1)
+			for b := 0; b < k.d; b++ {
+				bit := uint16BitN(val, k.d-b-1)
 				packed <<= 1
 				packed |= bit
 				bits++
@@ -264,7 +264,7 @@ func (k *FrodoKEM) unpack(b []uint8, n1 int, n2 int) (C [][]uint16) {
 	BBit := 7
 	for i := 0; i < n1; i++ {
 		for j := 0; j < n2; j++ {
-			for l := 0; l < k.D; l++ {
+			for l := 0; l < k.d; l++ {
 				bit := uint8BitN(b[bIdx], BBit)
 				BBit--
 				if BBit < 0 {
@@ -291,14 +291,14 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 	if multiplier == 0 {
 		multiplier = 65536
 	}
-	if k.B > 0 {
-		multiplier /= 2 << (k.B - 1)
+	if k.b > 0 {
+		multiplier /= 2 << (k.b - 1)
 	}
 	bIdx := 0
 	BBit := 0
 	for i := 0; i < k.mBar; i++ {
 		for j := 0; j < k.nBar; j++ {
-			for l := 0; l < k.B; l++ {
+			for l := 0; l < k.b; l++ {
 				bit := uint8BitN(b[bIdx], BBit)
 				if BBit++; BBit > 7 {
 					BBit = 0
@@ -316,19 +316,19 @@ func (k *FrodoKEM) encode(b []uint8) (K [][]uint16) {
 
 // FrodoKEM specification, Algorithm 2
 func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
-	b = make([]uint8, k.B*k.mBar*k.nBar/8)
+	b = make([]uint8, k.b*k.mBar*k.nBar/8)
 	fixedQ := float64(k.q)
 	if k.q == 0 {
 		fixedQ = float64(65535)
 	}
-	twoPowerB := int32(2 << (k.B - 1))
-	twoPowerBf := float64(int(2 << (k.B - 1)))
+	twoPowerB := int32(2 << (k.b - 1))
+	twoPowerBf := float64(int(2 << (k.b - 1)))
 	bIdx := 0
 	BBit := 0
 	for i := 0; i < k.mBar; i++ {
 		for j := 0; j < k.nBar; j++ {
 			tmp := uint8(int32(math.Round(float64(K[i][j])*twoPowerBf/fixedQ)) % twoPowerB) //FIXME: please do this better
-			for l := 0; l < k.B; l++ {
+			for l := 0; l < k.b; l++ {
 				bit := uint8BitN(tmp, l)
 				if bit == 1 {
 					b[bIdx] = uint8setBitN(b[bIdx], BBit)
