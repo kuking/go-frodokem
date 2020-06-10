@@ -25,6 +25,10 @@ ssDec, _ := kem.Dencapsulate(sk, ct)  // recovered shared-secret
 This library is stateless. A FrodoKEM struct (as returned by i.e. `frodo.Frodo640AES()`) can be used concurrently.
 Keys are immutable `[]byte` and they can be shared between concurrent goroutines.
 
-### Pending
+##  Author
+Eduardo E.S. Riccardi, you can contact me via [linkedin](https://uk.linkedin.com/in/kukino), or you could find my email
+address [here](https://kukino.uk/ed@kukino.uk.pub).
+
+## Pending
 - implement optimisations with SIMD instructions
 
