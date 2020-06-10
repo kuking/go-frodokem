@@ -24,7 +24,7 @@ func addARandom(hexs string) {
 	randoms = append(randoms, r)
 }
 
-func main() {
+func main_for_debug() {
 	//seed := "061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1"
 	expSS, _ := hex.DecodeString("594DE84473B3408E35F6C4D1F2F2EC3B56D2DDA96FA23496")
 

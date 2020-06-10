@@ -1,6 +1,9 @@
 package go_frodokem
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func TestEncapsulateInvalidPublicKeySize(t *testing.T) {
 	for name, kem := range suites() {
@@ -42,6 +45,24 @@ func TestDencapsulateInvalidSharedSecretSize(t *testing.T) {
 					t.Fatalf("kem.Dencapsulate should have failed with sk size %v", len(sk))
 				}
 			})
+		}
+	}
+}
+
+func TestDencapsulateCorruptedKem(t *testing.T) {
+	for _, kem := range suites() {
+		pk, sk := kem.Keygen()
+		ct, ssEnc, err := kem.Encapsulate(pk)
+		if err != nil {
+			t.Error(err)
+		}
+		ct[123]++
+		ssDec, err := kem.Dencapsulate(sk, ct)
+		if err != nil {
+			t.Error(err)
+		}
+		if bytes.Equal(ssEnc, ssDec) {
+			t.Error("shared key should be different")
 		}
 	}
 }

@@ -37,7 +37,7 @@ func runOne(name string, batchSize int, kem frodo.FrodoKEM) {
 		if err != nil {
 			panic(err)
 		}
-		ssDec, err := kem.DencapsulateFast(sk, ct)
+		ssDec, err := kem.Dencapsulate(sk, ct)
 		if err != nil {
 			panic(err)
 		}
