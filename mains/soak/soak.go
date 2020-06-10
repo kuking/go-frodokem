@@ -12,17 +12,6 @@ import (
 var flying int32
 var grandTotal int64
 
-func suites() map[string]frodo.FrodoKEM {
-	return map[string]frodo.FrodoKEM{
-		"640-AES":    frodo.Frodo640AES(),
-		"976-AES":    frodo.Frodo976AES(),
-		"1344-AES":   frodo.Frodo1344AES(),
-		"640-SHAKE":  frodo.Frodo640SHAKE(),
-		"976-SHAKE":  frodo.Frodo976SHAKE(),
-		"1344-SHAKE": frodo.Frodo1344SHAKE(),
-	}
-}
-
 func logCompleted() {
 	fmt.Printf("%v - Progress report: %v completed (%v in fly.)\n",
 		time.Now().Format(time.Stamp), atomic.LoadInt64(&grandTotal), atomic.LoadInt32(&flying))
@@ -61,8 +50,8 @@ func soakTest() {
 	atomic.StoreInt32(&flying, 0)
 	fmt.Printf("SoakTest: GenKey->Encaps->Decaps->DecapsFast\n"+
 		" - %v cihper-variants\n - %v batch-size\n - %v in-total\n - %v goroutines-concurrency\n\n",
-		len(suites()), batchSize, QtyPerSuite*len(suites()), maxGoProcs)
-	for name, kem := range suites() {
+		len(frodo.Variants()), batchSize, QtyPerSuite*len(frodo.Variants()), maxGoProcs)
+	for _, kem := range frodo.Variants() {
 		for i := 0; i < QtyPerSuite/batchSize; i++ {
 			for atomic.LoadInt32(&flying) >= 250 {
 				time.Sleep(time.Second * 20)
@@ -70,7 +59,7 @@ func soakTest() {
 				runtime.GC()
 			}
 			atomic.AddInt32(&flying, 1)
-			go runOne(name, batchSize, kem)
+			go runOne(kem.Name(), batchSize, kem)
 		}
 	}
 	for atomic.LoadInt32(&flying) != 0 {

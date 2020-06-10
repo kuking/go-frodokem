@@ -6,7 +6,7 @@ clean:
 
 build:
 	go build
-	go build -o bin/soak_test main/soak.go
+	go build -o bin/soak_test mains/soak/soak.go
 
 test:
 	go test

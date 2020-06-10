@@ -1,10 +1,31 @@
 package go_frodokem
 
 import (
+	"crypto/aes"
 	"encoding/binary"
 	"errors"
 	"math"
 )
+
+func (k *FrodoKEM) Name() string {
+	return k.name
+}
+
+func (k *FrodoKEM) SharedSecretLen() int {
+	return k.lenSS / 8
+}
+
+func (k *FrodoKEM) PublicKeyLen() int {
+	return k.lenPkBytes
+}
+
+func (k *FrodoKEM) SecretKeyLen() int {
+	return k.lenSkBytes
+}
+
+func (k *FrodoKEM) CipherTextLen() int {
+	return k.lenCtBytes
+}
 
 func (k *FrodoKEM) Keygen() (pk []uint8, sk []uint8) {
 	sSeedSEz := make([]byte, k.lenS/8+k.lenSeedSE/8+k.lenZ/8)
@@ -325,6 +346,54 @@ func (k *FrodoKEM) decode(K [][]uint16) (b []uint8) {
 
 func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
 	k.rng = newRng
+}
+
+func (k *FrodoKEM) genSHAKE128(seedA []byte) (A [][]uint16) {
+	A = make([][]uint16, k.n)
+	for i := 0; i < k.n; i++ {
+		A[i] = make([]uint16, k.n)
+	}
+	var tmp = make([]byte, 2+len(seedA))
+	copy(tmp[2:], seedA)
+	for i := 0; i < k.n; i++ {
+		binary.LittleEndian.PutUint16(tmp[0:], uint16(i))
+		c := shake128(tmp, 2*k.n)
+		for j := 0; j < k.n; j++ {
+			A[i][j] = binary.LittleEndian.Uint16(c[j*2 : (j+1)*2])
+			if k.q != 0 {
+				A[i][j] %= k.q
+			}
+		}
+	}
+	return
+}
+
+func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
+	A = make([][]uint16, k.n)
+	for i := 0; i < k.n; i++ {
+		A[i] = make([]uint16, k.n)
+	}
+	cipher, err := aes.NewCipher(seedA)
+	if err != nil {
+		panic(err)
+	}
+	var b = [16]byte{}
+	var c = [16]byte{}
+	for i := 0; i < k.n; i++ {
+		for j := 0; j < k.n; j += 8 {
+			binary.LittleEndian.PutUint16(b[0:2], uint16(i))
+			binary.LittleEndian.PutUint16(b[2:4], uint16(j))
+			cipher.Encrypt(c[:], b[:])
+			for l := 0; l < 8; l++ {
+				A[i][j+l] = binary.LittleEndian.Uint16(c[l*2 : (l+1)*2])
+				if k.q != 0 {
+					A[i][j+l] %= k.q
+				}
+			}
+
+		}
+	}
+	return
 }
 
 func uint16Equals(a [][]uint16, b [][]uint16) bool {
