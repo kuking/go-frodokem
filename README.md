@@ -29,6 +29,9 @@ Keys are immutable `[]byte` and they can be shared between concurrent goroutines
 Eduardo E.S. Riccardi, you can contact me via [linkedin](https://uk.linkedin.com/in/kukino), or you could find my email
 address [here](https://kukino.uk/ed@kukino.uk.pub).
 
+## Releases
+v1.0.0 - 10 June 2020 - Feature complete.
+
 ## Pending
 - implement optimisations with SIMD instructions
 
