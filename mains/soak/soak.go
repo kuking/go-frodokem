@@ -48,7 +48,7 @@ func soakTest() {
 	QtyPerSuite := 1_000_000
 	batchSize := 1_000
 	atomic.StoreInt32(&flying, 0)
-	fmt.Printf("SoakTest: GenKey->Encaps->Decaps->DecapsFast\n"+
+	fmt.Printf("SoakTest: GenKey->Encaps->Decaps\n"+
 		" - %v cihper-variants\n - %v batch-size\n - %v in-total\n - %v goroutines-concurrency\n\n",
 		len(frodo.Variants()), batchSize, QtyPerSuite*len(frodo.Variants()), maxGoProcs)
 	for _, kem := range frodo.Variants() {
