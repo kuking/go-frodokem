@@ -141,16 +141,13 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	Eprime := k.sampleMatrix(r[k.mBar*k.n:2*k.mBar*k.n], k.mBar, k.n)
 	A := k.gen(seedA)
 	Bprimeprime := matrixAddWithMod(matrixMulWithMod2(Sprime, A, k.q), Eprime, k.q)
-	if !uint16Equals(Bprime, Bprimeprime) {
-		ssDec = k.shake(append(ct, s...), k.lenSS/8)
-	}
 
 	Eprimeprime := k.sampleMatrix(r[2*k.mBar*k.n:2*k.mBar*k.n+k.mBar*k.nBar], k.mBar, k.nBar)
 	B := k.unpack(b, k.n, k.nBar)
 	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
 
-	if uint16Equals(C, Cprime) {
+	if uint16Equals(Bprime, Bprimeprime) && uint16Equals(C, Cprime) {
 		ssDec = k.shake(append(ct, kprime...), k.lenSS/8)
 	} else {
 		ssDec = k.shake(append(ct, s...), k.lenSS/8)
