@@ -147,7 +147,7 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
 
-	if uint16Equals(Bprime, Bprimeprime) && uint16Equals(C, Cprime) {
+	if constantUint16Equals(Bprime, Bprimeprime)+constantUint16Equals(C, Cprime) == 2 {
 		ssDec = k.shake(append(ct, kprime...), k.lenSS/8)
 	} else {
 		ssDec = k.shake(append(ct, s...), k.lenSS/8)
@@ -402,21 +402,23 @@ func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 	return
 }
 
-func uint16Equals(a [][]uint16, b [][]uint16) bool {
+// constant time [][]uint16 equals, 1=true, 0=false
+func constantUint16Equals(a [][]uint16, b [][]uint16) int {
+	retval := 1
 	if len(a) != len(b) {
-		return false
+		panic("your code is wrong")
 	}
 	for i := 0; i < len(a); i++ {
 		if len(a[i]) != len(b[i]) {
-			return false
+			panic("your code is wrong")
 		}
 		for j := 0; j < len(a[i]); j++ {
 			if a[i][j] != b[i][j] {
-				return false
+				retval = 0
 			}
 		}
 	}
-	return true
+	return retval
 }
 
 func matrixAddWithMod(X [][]uint16, Y [][]int16, q uint16) (R [][]uint16) {
