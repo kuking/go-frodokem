@@ -162,28 +162,28 @@ func (k *FrodoKEM) OverrideRng(newRng func([]byte)) {
 
 func (k *FrodoKEM) unwrapCt(ct []uint8) (c1 []uint8, c2 []uint8) {
 	ofs := 0
-	len := k.mBar * k.n * k.d / 8
-	c1 = ct[ofs:len] // fmt.Println("c1", hex.EncodeToString(c1))
-	ofs += len
-	len = k.mBar * k.mBar * k.d / 8
-	c2 = ct[ofs : ofs+len] // fmt.Println("c2", hex.EncodeToString(c2))
+	size := k.mBar * k.n * k.d / 8
+	c1 = ct[ofs:size] // fmt.Println("c1", hex.EncodeToString(c1))
+	ofs += size
+	size = k.mBar * k.mBar * k.d / 8
+	c2 = ct[ofs : ofs+size] // fmt.Println("c2", hex.EncodeToString(c2))
 	return
 }
 
 func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, Stransposed [][]int16, pkh []uint8) {
 	ofs := 0
-	len := k.lenS / 8
-	s = sk[ofs:len] // fmt.Println("s", hex.EncodeToString(s))
-	ofs += len
-	len = k.lenSeedA / 8
-	seedA = sk[ofs : ofs+len] // fmt.Println("seedA", hex.EncodeToString(seedA))
-	ofs += len
-	len = k.d * k.n * k.nBar / 8
-	b = sk[ofs : ofs+len] // fmt.Println("b", hex.EncodeToString(b))
+	size := k.lenS / 8
+	s = sk[ofs:size] // fmt.Println("s", hex.EncodeToString(s))
+	ofs += size
+	size = k.lenSeedA / 8
+	seedA = sk[ofs : ofs+size] // fmt.Println("seedA", hex.EncodeToString(seedA))
+	ofs += size
+	size = k.d * k.n * k.nBar / 8
+	b = sk[ofs : ofs+size] // fmt.Println("b", hex.EncodeToString(b))
 
-	ofs += len
-	len = k.n * k.nBar * 2
-	Sbytes := sk[ofs : ofs+len]
+	ofs += size
+	size = k.n * k.nBar * 2
+	Sbytes := sk[ofs : ofs+size]
 
 	idx := 0
 	Stransposed = make([][]int16, k.nBar)
@@ -198,9 +198,9 @@ func (k *FrodoKEM) unwrapSk(sk []uint8) (s []uint8, seedA []uint8, b []uint8, St
 	}
 	// fmt.Println("S^T", Stransposed)
 
-	ofs += len
-	len = k.lenPkh / 8
-	pkh = sk[ofs : ofs+len] // fmt.Println("pkh", hex.EncodeToString(pkh))
+	ofs += size
+	size = k.lenPkh / 8
+	pkh = sk[ofs : ofs+size] // fmt.Println("pkh", hex.EncodeToString(pkh))
 
 	return
 }
@@ -406,11 +406,11 @@ func (k *FrodoKEM) genAES128(seedA []byte) (A [][]uint16) {
 func constantUint16Equals(a [][]uint16, b [][]uint16) int {
 	retval := 1
 	if len(a) != len(b) {
-		panic("your code is wrong")
+		panic("Can not compare matrices of different size")
 	}
 	for i := 0; i < len(a); i++ {
 		if len(a[i]) != len(b[i]) {
-			panic("your code is wrong")
+			panic("Can not compare matrices of different size")
 		}
 		for j := 0; j < len(a[i]); j++ {
 			if a[i][j] != b[i][j] {
