@@ -30,6 +30,9 @@ Eduardo E.S. Riccardi, you can contact me via [linkedin](https://uk.linkedin.com
 address [here](https://kukino.uk/ed@kukino.uk.pub).
 
 ## Releases
+
+v1.0.1 - 25 June 2020 - Fixed a possible timing attack [#2](https://github.com/kuking/go-frodokem/issues/2)
+
 v1.0.0 - 10 June 2020 - Feature complete.
 
 ## Pending
