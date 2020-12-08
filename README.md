@@ -22,7 +22,7 @@ ssDec, _ := kem.Dencapsulate(sk, ct)  // recovered shared-secret
 // ssEnc == ssDec
 ```
 
-For a full key agreement example, see [agreement_test.go]().
+For a full key agreement example, see [agreement_test.go](agreement_test.go).
  
 #### Note on Concurrency
 This library is stateless. A FrodoKEM struct (as returned by i.e. `frodo.Frodo640AES()`) can be used concurrently.
