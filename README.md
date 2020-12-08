@@ -21,6 +21,9 @@ ct, ssEnc, _ := kem.Encapsulate(pk)   // cipher-text, shared-secret
 ssDec, _ := kem.Dencapsulate(sk, ct)  // recovered shared-secret
 // ssEnc == ssDec
 ```
+
+For a full key agreement example, see [agreement_test.go]().
+ 
 #### Note on Concurrency
 This library is stateless. A FrodoKEM struct (as returned by i.e. `frodo.Frodo640AES()`) can be used concurrently.
 Keys are immutable `[]byte` and they can be shared between concurrent goroutines.
