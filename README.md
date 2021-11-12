@@ -34,6 +34,8 @@ address [here](https://kukino.uk/ed@kukino.uk.pub).
 
 ## Releases
 
+v1.0.2 - 12 November 2021 - Updated XZ dependency version (only used in tests)
+
 v1.0.1 - 25 June 2020 - Fixed a possible timing attack [#2](https://github.com/kuking/go-frodokem/issues/2)
 
 v1.0.0 - 10 June 2020 - Feature complete.
