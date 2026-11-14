@@ -9,11 +9,59 @@ var variants = []FrodoKEM{
 	Frodo640AES(), Frodo640SHAKE(),
 	Frodo976AES(), Frodo976SHAKE(),
 	Frodo1344AES(), Frodo1344SHAKE(),
+	SaltedFrodo640AES(), SaltedFrodo640SHAKE(),
+	SaltedFrodo976AES(), SaltedFrodo976SHAKE(),
+	SaltedFrodo1344AES(), SaltedFrodo1344SHAKE(),
 }
 
-// Returns all the FrodoKEM variants supported as an array
+// Returns all the FrodoKEM variants supported as an array: the six ephemeral
+// ones (eFrodoKEM) followed by the six salted ones (FrodoKEM)
 func Variants() []FrodoKEM {
 	return variants
+}
+
+// salted turns an ephemeral parameter set (eFrodoKEM, which is FrodoKEM as
+// submitted to NIST round 3) into the salted one that the ISO standard and
+// draft-longa-cfrg-frodokem call FrodoKEM. The seed for S and E doubles in
+// length, and encapsulation draws a salt twice as long as the shared secret,
+// hashes it with the public key hash and mu, and appends it to the
+// ciphertext. Keys keep their format and length.
+func salted(f FrodoKEM, name string) FrodoKEM {
+	f.name = name
+	f.lenSeedSE = 2 * f.lenSS
+	f.lenSalt = 2 * f.lenSS
+	f.lenCtBytes += f.lenSalt / 8
+	return f
+}
+
+// Returns a new salted FrodoKEM 640 AES variant (Generates 128 bits of secret)
+func SaltedFrodo640AES() FrodoKEM {
+	return salted(Frodo640AES(), "SaltedFrodo640AES")
+}
+
+// Returns a new salted FrodoKEM 640 SHAKE variant (Generates 128 bits of secret)
+func SaltedFrodo640SHAKE() FrodoKEM {
+	return salted(Frodo640SHAKE(), "SaltedFrodo640Shake")
+}
+
+// Returns a new salted FrodoKEM 976 AES variant (Generates 192 bits of secret)
+func SaltedFrodo976AES() FrodoKEM {
+	return salted(Frodo976AES(), "SaltedFrodo976AES")
+}
+
+// Returns a new salted FrodoKEM 976 SHAKE variant (Generates 192 bits of secret)
+func SaltedFrodo976SHAKE() FrodoKEM {
+	return salted(Frodo976SHAKE(), "SaltedFrodo976Shake")
+}
+
+// Returns a new salted FrodoKEM 1344 AES variant (Generates 256 bits of secret)
+func SaltedFrodo1344AES() FrodoKEM {
+	return salted(Frodo1344AES(), "SaltedFrodo1344AES")
+}
+
+// Returns a new salted FrodoKEM 1344 SHAKE variant (Generates 256 bits of secret)
+func SaltedFrodo1344SHAKE() FrodoKEM {
+	return salted(Frodo1344SHAKE(), "SaltedFrodo1344Shake")
 }
 
 type FrodoKEM struct {
@@ -31,6 +79,7 @@ type FrodoKEM struct {
 	lenZ            int
 	lenMu           int
 	lenSeedSE       int
+	lenSalt         int // 0 for the ephemeral variants (eFrodoKEM)
 	lenS            int
 	lenK            int
 	lenPkh          int
