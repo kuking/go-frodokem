@@ -107,10 +107,11 @@ func readSaltedKATs(t *testing.T, filename string) (kats []saltedKAT) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 128*1024), 128*1024)
 	for scanner.Scan() {
-		name, value, ok := strings.Cut(strings.TrimSpace(scanner.Text()), " = ")
-		if !ok {
+		parts := strings.SplitN(strings.TrimSpace(scanner.Text()), " = ", 2)
+		if len(parts) != 2 {
 			continue
 		}
+		name, value := parts[0], parts[1]
 		if name == "count" {
 			cur = saltedKAT{count: value}
 			continue
@@ -136,11 +137,19 @@ func readSaltedKATs(t *testing.T, filename string) (kats []saltedKAT) {
 	if err := scanner.Err(); err != nil {
 		t.Fatal(err)
 	}
-	if len(kats) == 0 {
-		t.Fatalf("%s holds no test vector", filename)
+	if len(kats) != saltedKATEntries {
+		t.Fatalf("%s holds %d test vectors, want %d", filename, len(kats), saltedKATEntries)
+	}
+	for _, kat := range kats {
+		if len(kat.seed) != 48 || len(kat.pk) == 0 || len(kat.sk) == 0 || len(kat.ct) == 0 || len(kat.ss) == 0 {
+			t.Fatalf("%s count %s: a field is missing", filename, kat.count)
+		}
 	}
 	return
 }
+
+// Every .rsp file of the reference implementation has this many entries.
+const saltedKATEntries = 100
 
 func runSaltedKATs(t *testing.T, kemBuilder func() FrodoKEM, filename string) {
 	t.Parallel()
@@ -223,21 +232,37 @@ func TestSaltedSizes(t *testing.T) {
 	}
 }
 
-// Changing one bit of the salt must change the shared secret: the salt is
-// part of what is hashed, not padding.
-func TestSaltedDecapsulationDependsOnSalt(t *testing.T) {
-	kem := SaltedFrodo640SHAKE()
-	pk, sk := kem.Keygen()
-	ct, ss, err := kem.Encapsulate(pk)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ct[len(ct)-1] ^= 1
-	got, err := kem.Dencapsulate(sk, ct)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Equal(got, ss) {
-		t.Fatal("the shared secret did not change with the salt")
+// A ciphertext that was changed anywhere, the salt included, must be rejected
+// implicitly: the shared secret is the hash of the whole changed ciphertext
+// followed by the secret value s, which is the first part of the secret key.
+func TestSaltedImplicitRejection(t *testing.T) {
+	for _, kem := range []FrodoKEM{SaltedFrodo640SHAKE(), SaltedFrodo640AES()} {
+		pk, sk := kem.Keygen()
+		ct, ss, err := kem.Encapsulate(pk)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s := sk[:kem.SharedSecretLen()]
+		for _, at := range []struct {
+			name  string
+			index int
+		}{
+			{"first byte of c1", 0},
+			{"last byte of the salt", len(ct) - 1},
+			{"first byte of the salt", len(ct) - 2*kem.SharedSecretLen()},
+		} {
+			changed := append([]byte{}, ct...)
+			changed[at.index] ^= 1
+			got, err := kem.Dencapsulate(sk, changed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if bytes.Equal(got, ss) {
+				t.Errorf("%s, %s changed: the shared secret did not change", kem.Name(), at.name)
+			}
+			if want := kem.shake(append(append([]byte{}, changed...), s...), kem.SharedSecretLen()); !bytes.Equal(got, want) {
+				t.Errorf("%s, %s changed: the shared secret is not the hash of the changed ciphertext and s", kem.Name(), at.name)
+			}
+		}
 	}
 }
