@@ -2,6 +2,16 @@
 Golang implementation of FrodoKEM: a Practical quantum-secure key encapsulation from generic lattices (https://frodokem.org).
 This implementation passes all KAT tests from the reference specification for all defined key sizes (640 / 976 / 1344) and variants (AES / SHAKE).
 
+## Ephemeral and salted variants
+`Frodo640AES()` to `Frodo1344SHAKE()` are FrodoKEM as submitted to NIST round 3, which the ISO standard calls
+eFrodoKEM (ephemeral). `SaltedFrodo640AES()` to `SaltedFrodo1344SHAKE()` are the salted variant that the ISO standard
+calls FrodoKEM: encapsulation draws a salt, hashes it with the public key hash and the message, and appends it to the
+cipher-text, and the seed for the secret and error matrices is twice as long. Keys have the same format and length in
+both; a salted cipher-text is longer by the salt (32, 48 or 64 bytes).
+
+The salted variants pass the known-answer tests of the reference implementation
+(https://github.com/microsoft/PQCrypto-LWEKE, `FrodoKEM/KAT`, commit e1edeb3a), which are in `KAT/salted`.
+
 ## API
 There is a demo app that uses every method in the API. i.e. methods for listing variants, for creating key pairs,
 encapsulating & dencapsulating kems, auxiliary methods reporting cipher-text length, key-length, variant name, etc. 

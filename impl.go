@@ -75,13 +75,17 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	}
 	seedA := pk[0 : k.lenSeedA/8]
 	b := pk[k.lenSeedA/8:]
-	mu := make([]uint8, k.lenMu/8)
-	k.rng(mu)
+	// mu and the salt come from one draw, as in the reference implementation;
+	// the ephemeral variants have no salt
+	muSalt := make([]uint8, k.lenMu/8+k.lenSalt/8)
+	k.rng(muSalt)
+	mu := muSalt[:k.lenMu/8]
+	salt := muSalt[k.lenMu/8:]
 	//fmt.Println("seedA", hex.EncodeToString(seedA))
 	//fmt.Println("b", hex.EncodeToString(b))
 	//fmt.Println("mu", hex.EncodeToString(mu))
 	pkh := k.shake(pk, k.lenPkh/8) // fmt.Println("pkh", hex.EncodeToString(pkh))
-	seedSE_k := k.shake(append(pkh, mu...), k.lenSeedSE/8+k.lenK/8)
+	seedSE_k := k.shake(concat(pkh, muSalt), k.lenSeedSE/8+k.lenK/8)
 	seedSE := seedSE_k[0 : k.lenSeedSE/8]
 	_k := seedSE_k[k.lenSeedSE/8 : k.lenSeedSE/8+k.lenK/8]
 	r := unpackUint16(k.shake(append([]byte{0x96}, seedSE...), (2*k.mBar*k.n*k.mBar*k.mBar)*k.lenChi/8))
@@ -95,8 +99,21 @@ func (k *FrodoKEM) Encapsulate(pk []uint8) (ct []uint8, ssEnc []uint8, err error
 	V := matrixAddWithMod(matrixMulWithMod2(Sprime, B, k.q), Eprimeprime, k.q)
 	C := uMatrixAdd(V, k.encode(mu), k.q)
 	c2 := k.pack(C) // 	fmt.Println("c2", hex.EncodeToString(c2))
-	ct = append(c1, c2...)
-	ssEnc = k.shake(append(ct, _k...), k.lenSS/8)
+	ct = concat(c1, c2, salt)
+	ssEnc = k.shake(concat(ct, _k), k.lenSS/8)
+	return
+}
+
+// concat returns the parts joined in a new slice
+func concat(parts ...[]byte) (r []byte) {
+	size := 0
+	for _, p := range parts {
+		size += len(p)
+	}
+	r = make([]byte, 0, size)
+	for _, p := range parts {
+		r = append(r, p...)
+	}
 	return
 }
 
@@ -120,7 +137,8 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	M := matrixSubWithMod(C, BprimeS, k.q)
 	muPrime := k.decode(M) // fmt.Println("mu'", hex.EncodeToString(muPrime))
 
-	seedSEprime_kprime := k.shake(append(pkh, muPrime...), k.lenSeedSE/8+k.lenK/8)
+	salt := ct[len(ct)-k.lenSalt/8:] // empty for the ephemeral variants
+	seedSEprime_kprime := k.shake(concat(pkh, muPrime, salt), k.lenSeedSE/8+k.lenK/8)
 	seedSEprime := seedSEprime_kprime[0 : k.lenSeedSE/8] //	fmt.Println("seedSE'", hex.EncodeToString(seedSEprime))
 	kprime := seedSEprime_kprime[k.lenSeedSE/8:]         //	fmt.Println("k'", hex.EncodeToString(kprime))
 
@@ -137,9 +155,9 @@ func (k *FrodoKEM) Dencapsulate(sk []uint8, ct []uint8) (ssDec []uint8, err erro
 	Cprime := uMatrixAdd(V, k.encode(muPrime), k.q)
 
 	if constantUint16Equals(Bprime, Bprimeprime)+constantUint16Equals(C, Cprime) == 2 {
-		ssDec = k.shake(append(ct, kprime...), k.lenSS/8)
+		ssDec = k.shake(concat(ct, kprime), k.lenSS/8)
 	} else {
-		ssDec = k.shake(append(ct, s...), k.lenSS/8)
+		ssDec = k.shake(concat(ct, s), k.lenSS/8)
 	}
 	return
 }
